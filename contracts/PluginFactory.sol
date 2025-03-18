@@ -3,11 +3,23 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "contracts/interfaces/IGauge.sol";
 import "contracts/interfaces/IBribe.sol";
 import "contracts/interfaces/IVoter.sol";
 
-contract Plugin is ReentrancyGuard {
+// TODO:
+// - make it ownable
+// - make a treasury
+// - add balance of and totalSupply back
+// - add funciton to setTreasury
+// - think about other settable variables (duration, initial price, etc.) 
+// - why is minInitPrice immutable?
+// - review fee flow again to see what they got
+// - remove the bribe token, probably only add them if requested
+// - on buy do i want to let them input basket of assets? In case someone sends assets to contract?
+// - a bunch of testing
+contract Plugin is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
@@ -25,11 +37,14 @@ contract Plugin is ReentrancyGuard {
     address private immutable voter;
     address private gauge;
     address private bribe;
+
     string private  protocol;
     string private name;
+    
     address[] private assetTokens;
     address[] private bribeTokens;
 
+    address public treasury;
     uint256 public immutable minInitPrice;
     bool public initialized = false;
 
@@ -52,7 +67,7 @@ contract Plugin is ReentrancyGuard {
 
     /*----------  EVENTS ------------------------------------------------*/
 
-    event Plugin__ClaimedAnDistributed();
+    event Plugin__ClaimedAndDistributed(address indexed treasury, uint256 amount);
     event Plugin__Buy(address indexed buyer, address indexed assetReceiver, uint256 paymentAmount);
 
     /*----------  MODIFIERS  --------------------------------------------*/
@@ -77,7 +92,8 @@ contract Plugin is ReentrancyGuard {
         string memory _protocol,
         string memory _name,
         uint256 _initPrice,
-        uint256 _minInitPrice
+        uint256 _minInitPrice,
+        address _treasury
     ) {
         token = IERC20(_token);
         voter = _voter;
@@ -91,16 +107,15 @@ contract Plugin is ReentrancyGuard {
         auction.startTime = block.timestamp;
 
         minInitPrice = _minInitPrice;
+        treasury = _treasury;
     }
 
     function claimAndDistribute() public virtual nonReentrant {
         uint256 balance = token.balanceOf(address(this));
-        if (balance > DURATION) {
-            token.safeApprove(bribe, 0);
-            token.safeApprove(bribe, balance);
-            IBribe(bribe).notifyRewardAmount(address(token), balance);
+        if (balance > 0) {
+            token.safeTransfer(treasury, balance);
+            emit Plugin__ClaimedAndDistributed(treasury, balance);
         }
-        emit Plugin__ClaimedAnDistributed();
     }
 
     function buy(address assetReceiver, uint256 epochId, uint256 deadline, uint256 maxPaymentTokenAmount) external nonReentrant returns (uint256 paymentAmount) {
@@ -118,10 +133,11 @@ contract Plugin is ReentrancyGuard {
             token.safeTransferFrom(msg.sender, address(this), paymentAmount);
         }
 
+        // change this to just oTOKEN
         IGauge(gauge).getReward(address(this));
-        address[] memory rewardTokens = IGauge(gauge).getRewardTokens();
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            IERC20(rewardTokens[i]).safeTransfer(assetReceiver, IERC20(rewardTokens[i]).balanceOf(address(this)));
+        uint256 balance = IERC20(OTOKEN).balanceOf(address(this));
+        if (balance > 0) {
+            IERC20(OTOKEN).safeTransfer(assetReceiver, balance);
         }
 
         uint256 newInitPrice = paymentAmount * PRICE_MULITPLIER / PRECISION;
@@ -232,7 +248,8 @@ contract PluginFactory {
         address[] memory _assetTokens,
         string memory _name,
         uint256 _initPrice,
-        uint256 _minInitPrice
+        uint256 _minInitPrice,
+        address _treasury
     ) external returns (address) {
 
         address[] memory bribeTokens = new address[](1);
@@ -246,9 +263,11 @@ contract PluginFactory {
             PROTOCOL,
             _name,
             _initPrice,
-            _minInitPrice
+            _minInitPrice,
+            _treasury
         );
         last_plugin = address(lastPlugin);
+        lastPlugin.transferOwnership(msg.sender);
         emit PluginFactory__PluginCreated(last_plugin);
         return last_plugin;
     }
