@@ -19,7 +19,6 @@ const eightHundred = convert("800", 18);
 const oneThousand = convert("1000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
-let vaultFactory;
 let VTOKENFactory,
   OTOKENFactory,
   feesFactory,
@@ -28,13 +27,8 @@ let VTOKENFactory,
   bribeFactory;
 let minter, voter, fees, rewarder, governance, multicall;
 let TOKEN, VTOKEN, OTOKEN, BASE;
-let pluginFactory;
-let TEST0, xTEST0, plugin0, gauge0, bribe0;
-let TEST1, xTEST1, plugin1, gauge1, bribe1;
-let TEST2, LP0, plugin2, gauge2, bribe2;
-let TEST3, LP1, plugin3, gauge3, bribe3;
 
-describe("local: test6", function () {
+describe("test5", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -43,18 +37,9 @@ describe("local: test6", function () {
       await ethers.getSigners();
 
     // initialize BASE
-    const ERC20MockArtifact = await ethers.getContractFactory(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock"
-    );
+    const ERC20MockArtifact = await ethers.getContractFactory("ERC20Mock");
     BASE = await ERC20MockArtifact.deploy("BASE", "BASE");
     console.log("- BASE Initialized");
-
-    // initialize VaultFactory
-    const VaultFactoryArtifact = await ethers.getContractFactory(
-      "BerachainRewardsVaultFactory"
-    );
-    vaultFactory = await VaultFactoryArtifact.deploy();
-    console.log("- VaultFactory Initialized");
 
     // initialize OTOKENFactory
     const OTOKENFactoryArtifact = await ethers.getContractFactory(
@@ -92,8 +77,7 @@ describe("local: test6", function () {
       OTOKENFactory.address,
       VTOKENFactory.address,
       rewarderFactory.address,
-      feesFactory.address,
-      vaultFactory.address
+      feesFactory.address
     );
     console.log("- TOKEN Initialized");
 
@@ -208,146 +192,6 @@ describe("local: test6", function () {
     await voter.initialize(minter.address);
     await minter.initialize();
     console.log("- System set up");
-
-    const PluginFactoryArtifact = await ethers.getContractFactory(
-      "MockPluginFactory"
-    );
-    const PluginFactoryContract = await PluginFactoryArtifact.deploy(
-      voter.address,
-      vaultFactory.address
-    );
-    pluginFactory = await ethers.getContractAt(
-      "MockPluginFactory",
-      PluginFactoryContract.address
-    );
-    console.log("- PluginFactory Initialized");
-
-    await pluginFactory.createSingleStakePlugin("xTEST0", "TEST0");
-    plugin0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin0 Initialized");
-
-    await pluginFactory.createSingleStakePlugin("xTEST1", "TEST1");
-    plugin1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin1 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP0", "TEST2", "BASE");
-    plugin2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin2 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP1", "TEST3", "BASE");
-    plugin3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin3 Initialized");
-
-    // Initialize Mock Tokens
-    xTEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin0.getToken()
-    );
-    TEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin0.getBribeTokens()
-      )[0]
-    );
-    xTEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin1.getToken()
-    );
-    TEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin1.getBribeTokens()
-      )[0]
-    );
-    LP0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin2.getToken()
-    );
-    TEST2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin2.getBribeTokens()
-      )[0]
-    );
-    LP1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin3.getToken()
-    );
-    TEST3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin3.getBribeTokens()
-      )[0]
-    );
-    console.log("- Mock Tokens Initialized");
-
-    // add Plugin0 to Voter
-    await voter.addPlugin(plugin0.address);
-    let Gauge0Address = await voter.gauges(plugin0.address);
-    let Bribe0Address = await voter.bribes(plugin0.address);
-    gauge0 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge0Address
-    );
-    bribe0 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe0Address
-    );
-    console.log("- Plugin0 Added in Voter");
-
-    // add Plugin1 to Voter
-    await voter.addPlugin(plugin1.address);
-    let Gauge1Address = await voter.gauges(plugin1.address);
-    let Bribe1Address = await voter.bribes(plugin1.address);
-    gauge1 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge1Address
-    );
-    bribe1 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe1Address
-    );
-    console.log("- Plugin1 Added in Voter");
-
-    // add Plugin2 to Voter
-    await voter.addPlugin(plugin2.address);
-    let Gauge2Address = await voter.gauges(plugin2.address);
-    let Bribe2Address = await voter.bribes(plugin2.address);
-    gauge2 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge2Address
-    );
-    bribe2 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe2Address
-    );
-    console.log("- Plugin2 Added in Voter");
-
-    // add Plugin3 to Voter
-    await voter.addPlugin(plugin3.address);
-    let Gauge3Address = await voter.gauges(plugin3.address);
-    let Bribe3Address = await voter.bribes(plugin3.address);
-    gauge3 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge3Address
-    );
-    bribe3 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe3Address
-    );
-    console.log("- Plugin3 Added in Voter");
 
     console.log("Initialization Complete");
     console.log();

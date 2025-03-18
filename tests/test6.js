@@ -19,22 +19,19 @@ const eightHundred = convert("800", 18);
 const oneThousand = convert("1000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
-let vaultFactory;
 let VTOKENFactory,
   OTOKENFactory,
   feesFactory,
   rewarderFactory,
   gaugeFactory,
   bribeFactory;
-let minter, voter, fees, rewarder, governance, multicall, controller;
+let minter, voter, fees, rewarder, governance, multicall;
 let TOKEN, VTOKEN, OTOKEN, BASE;
 let pluginFactory;
-let TEST0, xTEST0, plugin0, gauge0, bribe0;
-let TEST1, xTEST1, plugin1, gauge1, bribe1;
-let TEST2, LP0, plugin2, gauge2, bribe2;
-let TEST3, LP1, plugin3, gauge3, bribe3;
+let LP0, plugin0, gauge0, bribe0;
+let LP1, plugin1, gauge1, bribe1;
 
-describe("local: test5", function () {
+describe("test6", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -43,18 +40,13 @@ describe("local: test5", function () {
       await ethers.getSigners();
 
     // initialize BASE
-    const ERC20MockArtifact = await ethers.getContractFactory(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock"
-    );
+    const ERC20MockArtifact = await ethers.getContractFactory("ERC20Mock");
     BASE = await ERC20MockArtifact.deploy("BASE", "BASE");
     console.log("- BASE Initialized");
-
-    // initialize VaultFactory
-    const VaultFactoryArtifact = await ethers.getContractFactory(
-      "BerachainRewardsVaultFactory"
-    );
-    vaultFactory = await VaultFactoryArtifact.deploy();
-    console.log("- VaultFactory Initialized");
+    LP0 = await ERC20MockArtifact.deploy("LP0", "LP0");
+    console.log("- LP0 Initialized");
+    LP1 = await ERC20MockArtifact.deploy("LP1", "LP1");
+    console.log("- LP1 Initialized");
 
     // initialize OTOKENFactory
     const OTOKENFactoryArtifact = await ethers.getContractFactory(
@@ -92,8 +84,7 @@ describe("local: test5", function () {
       OTOKENFactory.address,
       VTOKENFactory.address,
       rewarderFactory.address,
-      feesFactory.address,
-      vaultFactory.address
+      feesFactory.address
     );
     console.log("- TOKEN Initialized");
 
@@ -197,18 +188,6 @@ describe("local: test5", function () {
     );
     console.log("- Multicall Initialized");
 
-    // initialize Controller
-    const controllerArtifact = await ethers.getContractFactory("Controller");
-    const controllerContract = await controllerArtifact.deploy(
-      voter.address,
-      fees.address
-    );
-    controller = await ethers.getContractAt(
-      "Controller",
-      controllerContract.address
-    );
-    console.log("- Controller Initialized");
-
     // System set-up
     await gaugeFactory.setVoter(voter.address);
     await bribeFactory.setVoter(voter.address);
@@ -222,88 +201,42 @@ describe("local: test5", function () {
     console.log("- System set up");
 
     const PluginFactoryArtifact = await ethers.getContractFactory(
-      "MockPluginFactory"
+      "PluginFactory"
     );
     const PluginFactoryContract = await PluginFactoryArtifact.deploy(
-      voter.address,
-      vaultFactory.address
+      voter.address
     );
     pluginFactory = await ethers.getContractAt(
-      "MockPluginFactory",
+      "PluginFactory",
       PluginFactoryContract.address
     );
     console.log("- PluginFactory Initialized");
 
-    await pluginFactory.createSingleStakePlugin("xTEST0", "TEST0");
+    await pluginFactory.createPlugin(
+      LP0.address,
+      [LP0.address],
+      "LP0",
+      oneHundred,
+      oneHundred
+    );
     plugin0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
+      "contracts/PluginFactory.sol:Plugin",
       await pluginFactory.last_plugin()
     );
     console.log("- Plugin0 Initialized");
 
-    await pluginFactory.createSingleStakePlugin("xTEST1", "TEST1");
+    await pluginFactory.createPlugin(
+      LP1.address,
+      [LP1.address],
+      "LP1",
+      ten,
+      five
+    );
     plugin1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
+      "contracts/PluginFactory.sol:Plugin",
       await pluginFactory.last_plugin()
     );
     console.log("- Plugin1 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP0", "TEST2", "BASE");
-    plugin2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin2 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP1", "TEST3", "BASE");
-    plugin3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin3 Initialized");
-
-    // Initialize Mock Tokens
-    xTEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin0.getToken()
-    );
-    TEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin0.getBribeTokens()
-      )[0]
-    );
-    xTEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin1.getToken()
-    );
-    TEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin1.getBribeTokens()
-      )[0]
-    );
-    LP0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin2.getToken()
-    );
-    TEST2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin2.getBribeTokens()
-      )[0]
-    );
-    LP1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin3.getToken()
-    );
-    TEST3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin3.getBribeTokens()
-      )[0]
-    );
-    console.log("- Mock Tokens Initialized");
 
     // add Plugin0 to Voter
     await voter.addPlugin(plugin0.address);
@@ -317,6 +250,7 @@ describe("local: test5", function () {
       "contracts/BribeFactory.sol:Bribe",
       Bribe0Address
     );
+    await plugin0.initialize();
     console.log("- Plugin0 Added in Voter");
 
     // add Plugin1 to Voter
@@ -331,35 +265,8 @@ describe("local: test5", function () {
       "contracts/BribeFactory.sol:Bribe",
       Bribe1Address
     );
+    await plugin1.initialize();
     console.log("- Plugin1 Added in Voter");
-
-    // add Plugin2 to Voter
-    await voter.addPlugin(plugin2.address);
-    let Gauge2Address = await voter.gauges(plugin2.address);
-    let Bribe2Address = await voter.bribes(plugin2.address);
-    gauge2 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge2Address
-    );
-    bribe2 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe2Address
-    );
-    console.log("- Plugin2 Added in Voter");
-
-    // add Plugin3 to Voter
-    await voter.addPlugin(plugin3.address);
-    let Gauge3Address = await voter.gauges(plugin3.address);
-    let Bribe3Address = await voter.bribes(plugin3.address);
-    gauge3 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge3Address
-    );
-    bribe3 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe3Address
-    );
-    console.log("- Plugin3 Added in Voter");
 
     console.log("Initialization Complete");
     console.log();
@@ -367,88 +274,14 @@ describe("local: test5", function () {
 
   it("Mint test tokens to each user", async function () {
     console.log("******************************************************");
-    await xTEST0.mint(user0.address, 100);
-    await xTEST0.mint(user1.address, 100);
-    await xTEST0.mint(user2.address, 100);
-  });
-
-  it("User0 deposits in Plugin0 for user1", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user0).approve(plugin0.address, ten);
-    await plugin0.connect(user0).depositFor(user1.address, ten);
-  });
-
-  it("User1 withdraws from Plugin0 to user0", async function () {
-    console.log("******************************************************");
-    await plugin0.connect(user1).withdrawTo(user0.address, ten);
-  });
-
-  it("Get Plugin0 Card", async function () {
-    console.log("******************************************************");
-    const pluginCard = await controller.getPlugin(plugin0.address);
-    console.log(pluginCard);
-  });
-
-  it("Get Plugin0 Card", async function () {
-    console.log("******************************************************");
-    const pluginCard = await controller.getPluginInfo(0);
-    console.log(pluginCard);
-  });
-
-  it("User0 deposits in Plugin0 for user1", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user0).approve(plugin0.address, ten);
-    await plugin0.connect(user0).depositFor(user0.address, ten);
-  });
-
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user0.address);
-    console.log("INFORMATION");
-    console.log("Gauge: ", res.gauge);
-    console.log("Plugin: ", res.plugin);
-    console.log("Underlying: ", res.token);
-    console.log("Tokens in Underlying: ");
-    for (let i = 0; i < res.assetTokens.length; i++) {
-      console.log(" - ", res.assetTokens[i]);
-    }
-    console.log("Underlying Decimals: ", res.tokenDecimals);
-    console.log("Is Alive: ", res.isAlive);
-    console.log();
-    console.log("GLOBAL DATA");
-    console.log("Protocol: ", res.protocol);
-    console.log("Symbol: ", res.name);
-    console.log("Price OTOKEN: $", divDec(res.priceOTOKEN));
-    console.log("Reward Per token: ", divDec(res.rewardPerToken));
-    console.log("Reward Per token: $", divDec(res.rewardPerTokenUSD));
-    console.log("Total Supply: ", divDec(res.totalSupply));
-    console.log("Voting Weight: ", divDec(res.votingWeight), "%");
-    console.log();
-    console.log("ACCOUNT DATA");
-    console.log("Balance Underlying: ", divDec(res.accountTokenBalance));
-    console.log("Balance Deposited: ", divDec(res.accountStakedBalance));
-    console.log("Earned OTOKEN: ", divDec(res.accountEarnedOTOKEN));
-  });
-
-  it("Owner kills Plugin0", async function () {
-    console.log("******************************************************");
-    await voter.killGauge(gauge0.address);
-  });
-
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user0.address);
-    console.log(res);
-  });
-
-  it("User1 withdraws from Plugin0 to user0", async function () {
-    console.log("******************************************************");
-    await plugin0.connect(user0).withdrawTo(user0.address, ten);
-  });
-
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user0.address);
-    console.log(res);
+    await BASE.mint(user0.address, 1000);
+    await BASE.mint(user1.address, 1000);
+    await BASE.mint(user2.address, 1000);
+    await LP0.mint(user0.address, 100);
+    await LP0.mint(user1.address, 100);
+    await LP0.mint(user2.address, 100);
+    await LP1.mint(user0.address, 100);
+    await LP1.mint(user1.address, 100);
+    await LP1.mint(user2.address, 100);
   });
 });

@@ -151,8 +151,7 @@ contract TOKEN is ERC20, ReentrancyGuard {
         address _OTOKENFactory, 
         address _VTOKENFactory, 
         address _VTOKENRewarderFactory, 
-        address _TOKENFeesFactory,
-        address _vaultFactory
+        address _TOKENFeesFactory
     )
         ERC20(NAME, SYMBOL)
         nonZeroAddress(_BASE)
@@ -164,7 +163,7 @@ contract TOKEN is ERC20, ReentrancyGuard {
         mrvBASE = _supplyTOKEN;
         mrrTOKEN = _supplyTOKEN;
         OTOKEN = IOTOKENFactory(_OTOKENFactory).createOToken(_owner);
-        (address vToken, address rewarder) = IVTOKENFactory(_VTOKENFactory).createVToken(address(this), OTOKEN, _VTOKENRewarderFactory, _vaultFactory, _owner);
+        (address vToken, address rewarder) = IVTOKENFactory(_VTOKENFactory).createVToken(address(this), OTOKEN, _VTOKENRewarderFactory, _owner);
         VTOKEN = vToken;
         FEES = ITOKENFeesFactory(_TOKENFeesFactory).createTokenFees(rewarder, address(this), _BASE, OTOKEN);
     }

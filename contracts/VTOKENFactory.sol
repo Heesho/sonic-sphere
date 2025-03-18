@@ -51,9 +51,6 @@ contract VTOKEN is ERC20, ERC20Votes, ReentrancyGuard, Ownable {
     IERC20 public immutable OTOKEN;     // OTOKEN address
     address public voter;               // voter address where voting power is used
 
-    address public immutable vaultToken;  // staking token address for Berachain Rewards Vault Delegate Stake
-    address public immutable rewardVault;   // reward vault address for Berachain Rewards Vault Delegate Stake
-
     uint256 private _totalSupplyTOKEN;                   // total supply of TOKEN deposited
     mapping(address => uint256) private _balancesTOKEN;  // balances of TOKEN deposited
     
@@ -97,17 +94,14 @@ contract VTOKEN is ERC20, ERC20Votes, ReentrancyGuard, Ownable {
      * @param _TOKEN address of TOKEN contract
      * @param _OTOKEN address of OTOKEN contract
      * @param _VTOKENRewarderFactory address of VTOKENRewarderFactory contract
-     * @param _vaultFactory address of Berachain Rewards Vault Factory contract
      */
-    constructor(address _TOKEN, address _OTOKEN, address _VTOKENRewarderFactory, address _vaultFactory) 
+    constructor(address _TOKEN, address _OTOKEN, address _VTOKENRewarderFactory) 
         ERC20(NAME, SYMBOL)
         ERC20Permit(NAME)
     {
         TOKEN = IERC20(_TOKEN);
         OTOKEN = IERC20(_OTOKEN);
         rewarder = IVTOKENRewarderFactory(_VTOKENRewarderFactory).createVTokenRewarder(address(this));
-        vaultToken = address(new VaultToken());
-        rewardVault = IBerachainRewardsVaultFactory(_vaultFactory).createRewardVault(address(vaultToken));
     }
 
     /**
@@ -260,8 +254,8 @@ contract VTOKENFactory {
 
     constructor() {}
 
-    function createVToken(address _TOKEN, address _OTOKEN, address _VTOKENRewarderFactory, address _vaultFactory, address _owner) external returns (address, address) {
-        address vToken = address(new VTOKEN(_TOKEN, _OTOKEN, _VTOKENRewarderFactory, _vaultFactory));
+    function createVToken(address _TOKEN, address _OTOKEN, address _VTOKENRewarderFactory, address _owner) external returns (address, address) {
+        address vToken = address(new VTOKEN(_TOKEN, _OTOKEN, _VTOKENRewarderFactory));   
         VTOKEN(vToken).transferOwnership(_owner);
         emit VTOKENFactory__VTokenCreated(vToken);
         return (vToken, VTOKEN(vToken).rewarder());

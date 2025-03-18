@@ -19,7 +19,6 @@ const eightHundred = convert("800", 18);
 const oneThousand = convert("1000", 18);
 
 let owner, multisig, treasury, user0, user1, user2;
-let vaultFactory;
 let VTOKENFactory,
   OTOKENFactory,
   feesFactory,
@@ -28,13 +27,8 @@ let VTOKENFactory,
   bribeFactory;
 let minter, voter, fees, rewarder, governance, multicall, priceOracle;
 let TOKEN, VTOKEN, OTOKEN, BASE;
-let pluginFactory;
-let TEST0, xTEST0, plugin0, gauge0, bribe0;
-let TEST1, xTEST1, plugin1, gauge1, bribe1;
-let TEST2, LP0, plugin2, gauge2, bribe2;
-let TEST3, LP1, plugin3, gauge3, bribe3;
 
-describe("local: test1", function () {
+describe("test4", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -46,13 +40,6 @@ describe("local: test1", function () {
     const ERC20MockArtifact = await ethers.getContractFactory("ERC20Mock");
     BASE = await ERC20MockArtifact.deploy("BASE", "BASE");
     console.log("- ERC20Mocks Initialized");
-
-    // initialize VaultFactory
-    const VaultFactoryArtifact = await ethers.getContractFactory(
-      "BerachainRewardsVaultFactory"
-    );
-    vaultFactory = await VaultFactoryArtifact.deploy();
-    console.log("- VaultFactory Initialized");
 
     // initialize OTOKENFactory
     const OTOKENFactoryArtifact = await ethers.getContractFactory(
@@ -90,8 +77,7 @@ describe("local: test1", function () {
       OTOKENFactory.address,
       VTOKENFactory.address,
       rewarderFactory.address,
-      feesFactory.address,
-      vaultFactory.address
+      feesFactory.address
     );
     console.log("- TOKEN Initialized");
 
@@ -225,146 +211,6 @@ describe("local: test1", function () {
     await minter.initialize();
     console.log("- System set up");
 
-    const PluginFactoryArtifact = await ethers.getContractFactory(
-      "MockPluginFactory"
-    );
-    const PluginFactoryContract = await PluginFactoryArtifact.deploy(
-      voter.address,
-      vaultFactory.address
-    );
-    pluginFactory = await ethers.getContractAt(
-      "MockPluginFactory",
-      PluginFactoryContract.address
-    );
-    console.log("- PluginFactory Initialized");
-
-    await pluginFactory.createSingleStakePlugin("xTEST0", "TEST0");
-    plugin0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin0 Initialized");
-
-    await pluginFactory.createSingleStakePlugin("xTEST1", "TEST1");
-    plugin1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin1 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP0", "TEST2", "BASE");
-    plugin2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin2 Initialized");
-
-    await pluginFactory.createLPMockPlugin("LP1", "TEST3", "BASE");
-    plugin3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:MockPlugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin3 Initialized");
-
-    // Initialize Mock Tokens
-    xTEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin0.getToken()
-    );
-    TEST0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin0.getBribeTokens()
-      )[0]
-    );
-    xTEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin1.getToken()
-    );
-    TEST1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin1.getBribeTokens()
-      )[0]
-    );
-    LP0 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin2.getToken()
-    );
-    TEST2 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin2.getBribeTokens()
-      )[0]
-    );
-    LP1 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      await plugin3.getToken()
-    );
-    TEST3 = await ethers.getContractAt(
-      "contracts/plugins/local/MockPluginFactory.sol:ERC20Mock",
-      (
-        await plugin3.getBribeTokens()
-      )[0]
-    );
-    console.log("- Mock Tokens Initialized");
-
-    // add Plugin0 to Voter
-    await voter.addPlugin(plugin0.address);
-    let Gauge0Address = await voter.gauges(plugin0.address);
-    let Bribe0Address = await voter.bribes(plugin0.address);
-    gauge0 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge0Address
-    );
-    bribe0 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe0Address
-    );
-    console.log("- Plugin0 Added in Voter");
-
-    // add Plugin1 to Voter
-    await voter.addPlugin(plugin1.address);
-    let Gauge1Address = await voter.gauges(plugin1.address);
-    let Bribe1Address = await voter.bribes(plugin1.address);
-    gauge1 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge1Address
-    );
-    bribe1 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe1Address
-    );
-    console.log("- Plugin1 Added in Voter");
-
-    // add Plugin2 to Voter
-    await voter.addPlugin(plugin2.address);
-    let Gauge2Address = await voter.gauges(plugin2.address);
-    let Bribe2Address = await voter.bribes(plugin2.address);
-    gauge2 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge2Address
-    );
-    bribe2 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe2Address
-    );
-    console.log("- Plugin2 Added in Voter");
-
-    // add Plugin3 to Voter
-    await voter.addPlugin(plugin3.address);
-    let Gauge3Address = await voter.gauges(plugin3.address);
-    let Bribe3Address = await voter.bribes(plugin3.address);
-    gauge3 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge3Address
-    );
-    bribe3 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe3Address
-    );
-    console.log("- Plugin3 Added in Voter");
-
     console.log("Initialization Complete");
     console.log();
   });
@@ -374,18 +220,6 @@ describe("local: test1", function () {
     await BASE.mint(user0.address, 1000);
     await BASE.mint(user1.address, 1000);
     await BASE.mint(user2.address, 1000);
-    await xTEST0.mint(user0.address, 100);
-    await xTEST0.mint(user1.address, 100);
-    await xTEST0.mint(user2.address, 100);
-    await xTEST1.mint(user0.address, 100);
-    await xTEST1.mint(user1.address, 100);
-    await xTEST1.mint(user2.address, 100);
-    await LP0.mint(user0.address, 100);
-    await LP0.mint(user1.address, 100);
-    await LP0.mint(user2.address, 100);
-    await LP1.mint(user0.address, 100);
-    await LP1.mint(user1.address, 100);
-    await LP1.mint(user2.address, 100);
   });
 
   it("Quote Buy In", async function () {
@@ -634,23 +468,6 @@ describe("local: test1", function () {
     console.log("Max Withdraw: ", divDec(res.accountMaxWithdraw), "VTOKEN");
   });
 
-  it("user0 votes on plugins", async function () {
-    console.log("******************************************************");
-    await expect(
-      voter.connect(user0).vote([plugin0.address, plugin1.address], [0, ten])
-    ).to.be.reverted;
-    await voter
-      .connect(user0)
-      .vote([plugin0.address, plugin1.address], [ten, ten]);
-  });
-
-  it("User0 emergency exits", async function () {
-    console.log("******************************************************");
-    await expect(
-      VTOKEN.connect(user0).withdraw(await VTOKEN.balanceOfTOKEN(user0.address))
-    ).to.be.revertedWith("VTOKEN__VotingWeightActive");
-  });
-
   it("Forward time by 7 days", async function () {
     console.log("******************************************************");
     await network.provider.send("evm_increaseTime", [7 * 24 * 3600]);
@@ -659,9 +476,6 @@ describe("local: test1", function () {
 
   it("User0 emergency exits", async function () {
     console.log("******************************************************");
-    await expect(
-      VTOKEN.connect(user0).withdraw(await VTOKEN.balanceOfTOKEN(user0.address))
-    ).to.be.revertedWith("VTOKEN__VotingWeightActive");
     await voter.connect(user0).reset();
     await expect(
       VTOKEN.connect(user0).withdraw(await VTOKEN.balanceOfTOKEN(user0.address))
@@ -716,18 +530,6 @@ describe("local: test1", function () {
     console.log("Max Withdraw: ", divDec(res.accountMaxWithdraw), "VTOKEN");
   });
 
-  it("User2 deposits in all plugins", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user2).approve(plugin0.address, ten);
-    await plugin0.connect(user2).depositFor(user2.address, ten);
-    await xTEST1.connect(user2).approve(plugin1.address, ten);
-    await plugin1.connect(user2).depositFor(user2.address, ten);
-    await LP0.connect(user2).approve(plugin2.address, ten);
-    await plugin2.connect(user2).depositFor(user2.address, ten);
-    await LP1.connect(user2).approve(plugin3.address, ten);
-    await plugin3.connect(user2).depositFor(user2.address, ten);
-  });
-
   it("User0 stakes all TOKEN", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).approve(
@@ -743,180 +545,11 @@ describe("local: test1", function () {
     await network.provider.send("evm_mine");
   });
 
-  it("user0 votes on plugins", async function () {
-    console.log("******************************************************");
-    await expect(
-      voter.connect(user0).vote([plugin0.address, plugin1.address], [0, ten])
-    ).to.be.reverted;
-    await voter
-      .connect(user0)
-      .vote([plugin0.address, plugin1.address], [ten, ten]);
-  });
-
   it("Owner calls distribute", async function () {
     console.log("******************************************************");
     await OTOKEN.connect(owner).transfer(fees.address, ten);
     await voter.connect(owner).distro();
     await fees.distribute();
-    await voter.distributeToBribes([
-      plugin0.address,
-      plugin1.address,
-      plugin2.address,
-      plugin3.address,
-    ]);
-  });
-
-  it("Bribe Coverage", async function () {
-    console.log("******************************************************");
-    await bribe0.left(xTEST0.address);
-    await bribe0.totalSupply();
-  });
-
-  it("Gauge Coverage", async function () {
-    console.log("******************************************************");
-    await expect(
-      gauge0.connect(user2)._withdraw(user2.address, ten)
-    ).to.be.revertedWith("Gauge__NotAuthorizedPlugin");
-    await plugin0.connect(user2).withdrawTo(user2.address, five);
-  });
-
-  it("Gauge Coverage", async function () {
-    console.log("******************************************************");
-    await plugin0.connect(user2).withdrawTo(user2.address, five);
-  });
-
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user2.address);
-    console.log("INFORMATION");
-    console.log("Gauge: ", res.gauge);
-    console.log("Plugin: ", res.plugin);
-    console.log("Underlying: ", res.token);
-    console.log("Tokens in Underlying: ");
-    for (let i = 0; i < res.assetTokens.length; i++) {
-      console.log(" - ", res.assetTokens[i]);
-    }
-    console.log("Underlying Decimals: ", res.tokenDecimals);
-    console.log("Is Alive: ", res.isAlive);
-    console.log();
-    console.log("GLOBAL DATA");
-    console.log("Protocol: ", res.protocol);
-    console.log("Symbol: ", res.name);
-    console.log("Price OTOKEN: $", divDec(res.priceOTOKEN));
-    console.log("Reward Per token: ", divDec(res.rewardPerToken));
-    console.log("Reward Per token: $", divDec(res.rewardPerTokenUSD));
-    console.log("Total Supply: ", divDec(res.totalSupply));
-    console.log("Voting Weight: ", divDec(res.votingWeight), "%");
-    console.log();
-    console.log("ACCOUNT DATA");
-    console.log("Balance Underlying: ", divDec(res.accountUnderlyingBalance));
-    console.log("Balance Deposited: ", divDec(res.accountStakedBalance));
-    console.log("Earned OTOKEN: ", divDec(res.accountEarnedOTOKEN));
-  });
-
-  it("User2 deposits in plugin0", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user2).approve(plugin0.address, ten);
-    await plugin0.connect(user2).depositFor(user2.address, ten);
-  });
-
-  it("Forward time by 7 days", async function () {
-    console.log("******************************************************");
-    await network.provider.send("evm_increaseTime", [7 * 24 * 3600]);
-    await network.provider.send("evm_mine");
-  });
-
-  it("User2 emergencyExits plugin0", async function () {
-    console.log("******************************************************");
-    console.log(
-      "TEST0 Balance in xTEST0: ",
-      divDec(await xTEST0.balanceOf(xTEST0.address)),
-      await xTEST0.balanceOf(xTEST0.address)
-    );
-    console.log(
-      "xTEST0 Balance in plugin0: ",
-      divDec(await xTEST0.balanceOf(plugin0.address)),
-      await xTEST0.balanceOf(plugin0.address)
-    );
-    await plugin0
-      .connect(user2)
-      .withdrawTo(user2.address, await plugin0.balanceOf(user2.address));
-  });
-
-  it("User2 deposits in plugin0", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user2).approve(plugin0.address, ten);
-    await plugin0.connect(user2).depositFor(user2.address, ten);
-  });
-
-  it("Owner calls distribute", async function () {
-    console.log("******************************************************");
-    await voter.connect(owner).distro();
-    await voter.distributeToBribes([
-      plugin0.address,
-      plugin1.address,
-      plugin2.address,
-      plugin3.address,
-    ]);
-  });
-
-  it("User2 emergencyExits plugin0", async function () {
-    console.log("******************************************************");
-    console.log(
-      "TEST0 Balance in xTEST0: ",
-      divDec(await xTEST0.balanceOf(xTEST0.address)),
-      await xTEST0.balanceOf(xTEST0.address)
-    );
-    console.log(
-      "xTEST0 Balance in plugin0: ",
-      divDec(await xTEST0.balanceOf(plugin0.address)),
-      await xTEST0.balanceOf(plugin0.address)
-    );
-    await plugin0
-      .connect(user2)
-      .withdrawTo(user2.address, await plugin0.balanceOf(user2.address));
-  });
-
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user2.address);
-    console.log("INFORMATION");
-    console.log("Gauge: ", res.gauge);
-    console.log("Plugin: ", res.plugin);
-    console.log("Underlying: ", res.token);
-    console.log("Tokens in Underlying: ");
-    for (let i = 0; i < res.assetTokens.length; i++) {
-      console.log(" - ", res.assetTokens[i]);
-    }
-    console.log("Underlying Decimals: ", res.tokenDecimals);
-    console.log("Is Alive: ", res.isAlive);
-    console.log();
-    console.log("GLOBAL DATA");
-    console.log("Protocol: ", res.protocol);
-    console.log("Symbol: ", res.name);
-    console.log("Price OTOKEN: $", divDec(res.priceOTOKEN));
-    console.log("Reward Per token: ", divDec(res.rewardPerToken));
-    console.log("Reward Per token: $", divDec(res.rewardPerTokenUSD));
-    console.log("Total Supply: ", divDec(res.totalSupply));
-    console.log("Voting Weight: ", divDec(res.votingWeight), "%");
-    console.log();
-    console.log("ACCOUNT DATA");
-    console.log("Balance Underlying: ", divDec(res.accountUnderlyingBalance));
-    console.log("Balance Deposited: ", divDec(res.accountStakedBalance));
-    console.log("Earned OTOKEN: ", divDec(res.accountEarnedOTOKEN));
-  });
-
-  it("User2 deposits in plugin0", async function () {
-    console.log("******************************************************");
-    await xTEST0.connect(user2).approve(plugin0.address, ten);
-    await plugin0.connect(user2).depositFor(user2.address, ten);
-  });
-
-  it("Gauge Coverage", async function () {
-    console.log("******************************************************");
-    await expect(
-      plugin0.connect(user2).withdrawTo(user2.address, 0)
-    ).to.be.revertedWith("Plugin__InvalidZeroInput");
   });
 
   it("Minter Coverage", async function () {
@@ -932,16 +565,6 @@ describe("local: test1", function () {
       "Minter__GrowthRateTooHigh"
     );
     await minter.setGrowthRate(50);
-  });
-
-  it("Plugin Coverage", async function () {
-    console.log("******************************************************");
-    await TEST0.connect(user2).approve(plugin0.address, 0);
-    await expect(
-      plugin0.connect(user2).depositFor(user2.address, 0)
-    ).to.be.revertedWith("Plugin__InvalidZeroInput");
-    await plugin3.getName();
-    await plugin2.getGauge();
   });
 
   it("User1 Buys TOKEN with 10 BASE", async function () {
@@ -1009,35 +632,6 @@ describe("local: test1", function () {
     await VTOKEN.connect(owner).burnFor(user1.address, ten);
   });
 
-  it("GaugeCardData, plugin0, user0", async function () {
-    console.log("******************************************************");
-    let res = await multicall.gaugeCardData(plugin0.address, user2.address);
-    console.log("INFORMATION");
-    console.log("Gauge: ", res.gauge);
-    console.log("Plugin: ", res.plugin);
-    console.log("Underlying: ", res.token);
-    console.log("Tokens in Underlying: ");
-    for (let i = 0; i < res.assetTokens.length; i++) {
-      console.log(" - ", res.assetTokens[i]);
-    }
-    console.log("Underlying Decimals: ", res.tokenDecimals);
-    console.log("Is Alive: ", res.isAlive);
-    console.log();
-    console.log("GLOBAL DATA");
-    console.log("Protocol: ", res.protocol);
-    console.log("Symbol: ", res.name);
-    console.log("Price OTOKEN: $", divDec(res.priceOTOKEN));
-    console.log("Reward Per token: ", divDec(res.rewardPerToken));
-    console.log("Reward Per token: $", divDec(res.rewardPerTokenUSD));
-    console.log("Total Supply: ", divDec(res.totalSupply));
-    console.log("Voting Weight: ", divDec(res.votingWeight), "%");
-    console.log();
-    console.log("ACCOUNT DATA");
-    console.log("Balance Underlying: ", divDec(res.accountUnderlyingBalance));
-    console.log("Balance Deposited: ", divDec(res.accountStakedBalance));
-    console.log("Earned OTOKEN: ", divDec(res.accountEarnedOTOKEN));
-  });
-
   it("User2 Buys TOKEN with 20 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, twenty);
@@ -1070,12 +664,6 @@ describe("local: test1", function () {
     await rewarder.left(TOKEN.address);
     await voter.connect(owner).distro();
     await fees.distribute();
-    await voter.distributeToBribes([
-      plugin0.address,
-      plugin1.address,
-      plugin2.address,
-      plugin3.address,
-    ]);
   });
 
   it("Rewarder Coverage", async function () {
@@ -1097,15 +685,6 @@ describe("local: test1", function () {
 
   it("Voter Coverage", async function () {
     console.log("******************************************************");
-
-    await expect(
-      voter.connect(user1).addBribeReward(bribe0.address, BASE.address)
-    ).to.be.revertedWith("Voter__NotAuthorizedGovernance");
-    await expect(
-      voter.connect(owner).addBribeReward(bribe0.address, AddressZero)
-    ).to.be.revertedWith("Voter__InvalidZeroAddress");
-    await voter.connect(owner).addBribeReward(bribe0.address, BASE.address);
-
     await voter.getPlugins();
   });
 

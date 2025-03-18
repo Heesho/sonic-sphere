@@ -20,22 +20,9 @@ contract Controller {
         address token;
         address gauge;
         address bribe;
-        address vaultToken;
-        address rewardVault;
         bool isAlive;
         string name;
         string protocol;
-    }
-
-    struct PluginData {
-        string protocol;
-        string name;
-        address token;
-        address plugin;
-        address gauge;
-        address bribe;
-        address vaultToken;
-        address rewardVault;
     }
 
     /*----------  FUNCTIONS  --------------------------------------------*/
@@ -50,25 +37,12 @@ contract Controller {
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
-    function getPlugin(address plugin) public view returns (PluginData memory pluginCard) {
-        pluginCard.protocol = IPlugin(plugin).getProtocol();
-        pluginCard.name = IPlugin(plugin).getName();
-        pluginCard.token = IPlugin(plugin).getToken();
-        pluginCard.plugin = plugin;
-        pluginCard.gauge = IVoter(voter).gauges(plugin);
-        pluginCard.bribe = IVoter(voter).bribes(plugin);
-        pluginCard.vaultToken = IPlugin(plugin).getVaultToken();
-        pluginCard.rewardVault = IPlugin(plugin).getRewardVault();
-    }
-
     function getPluginInfo(uint256 index) public view returns (Plugin memory plugin) {
         plugin.index = index;
         plugin.plugin = IVoter(voter).plugins(index);
         plugin.token = IPlugin(plugin.plugin).getToken();
         plugin.gauge = IVoter(voter).gauges(plugin.plugin);
         plugin.bribe = IVoter(voter).bribes(plugin.plugin);
-        plugin.vaultToken = IPlugin(plugin.plugin).getVaultToken();
-        plugin.rewardVault = IPlugin(plugin.plugin).getRewardVault();
         plugin.isAlive = IVoter(voter).isAlive(plugin.gauge);
         plugin.name = IPlugin(plugin.plugin).getName();
         plugin.protocol = IPlugin(plugin.plugin).getProtocol();

@@ -179,18 +179,6 @@ contract Plugin is ReentrancyGuard {
         return auction;
     }
 
-    function balanceOf(address account) public view returns (uint256) {
-        if (account == address(this)) {
-            return AMOUNT;
-        } else {
-            return 0;
-        }
-    }
-
-    function totalSupply() public pure returns (uint256) {
-        return AMOUNT;
-    }
-
     function getToken() public view virtual returns (address) {
         return address(token);
     }
@@ -250,7 +238,7 @@ contract PluginFactory {
         address[] memory bribeTokens = new address[](1);
         bribeTokens[0] = _paymentToken;
 
-        VolPlugin lastPlugin = new VolPlugin(
+        Plugin lastPlugin = new Plugin(
             _paymentToken,
             VOTER,
             _assetTokens,
