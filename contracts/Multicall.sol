@@ -70,7 +70,6 @@ contract Multicall {
         uint256 accountMaxWithdraw;      
 
         uint256 accountLastVoted;       
-
     }
 
     struct GaugeCard {
@@ -80,22 +79,18 @@ contract Multicall {
 
         address gauge;                       
         bool isAlive;                       
-
-        string protocol;                   
+               
         string name;                       
         address[] assetTokens;              
 
         uint256 priceBase;
         uint256 priceOTOKEN;
 
-        uint256 rewardPerToken;            
-        uint256 rewardPerTokenUSD;          
-        uint256 votingWeight;               
-        uint256 totalSupply;                
+
+       
+        uint256 votingWeight;                               
 
         uint256 accountTokenBalance;   
-        uint256 accountStakedBalance;      
-        uint256 accountEarnedOTOKEN;        
     }
 
     struct BribeCard {
@@ -110,6 +105,7 @@ contract Multicall {
         uint8[] rewardTokenDecimals;    
         uint256[] rewardsPerToken;      
         uint256[] accountRewardsEarned; 
+        uint256[] rewardsLeft; 
 
         uint256 voteWeight;             
         uint256 votePercent;            
@@ -120,7 +116,6 @@ contract Multicall {
     struct Portfolio {
         uint256 total;
         uint256 stakingRewards;
-        uint256 farmingRewards;
     }
 
     /*----------  FUNCTIONS  --------------------------------------------*/
@@ -249,6 +244,12 @@ contract Multicall {
         }
         bribeCard.accountRewardsEarned = _accountRewardsEarned;
 
+        uint[] memory _rewardsLeft = new uint[](bribeCard.rewardTokens.length);
+        for (uint i = 0; i < bribeCard.rewardTokens.length; i++) {
+            _rewardsLeft[i] = IBribe(bribeCard.bribe).left(bribeCard.rewardTokens[i]);
+        }
+        bribeCard.rewardsLeft = _rewardsLeft;
+
         bribeCard.voteWeight = IVoter(voter).weights(plugin);
         bribeCard.votePercent = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
 
@@ -338,17 +339,6 @@ contract Multicall {
             + (IVTOKENRewarder(rewarder).getRewardForDuration(TOKEN) * ITOKEN(TOKEN).getMarketPrice() / 1e18)
             + (IVTOKENRewarder(rewarder).getRewardForDuration(OTOKEN) * ITOKEN(TOKEN).getOTokenPrice() / 1e18)) / 1e18
             * IERC20(VTOKEN).balanceOf(account) / IERC20(VTOKEN).totalSupply());
-
-        address[] memory plugins = IVoter(voter).getPlugins();
-        uint256 rewardsOTOKEN = 0;
-        for (uint i = 0; i < plugins.length; i++) {
-            address gauge = IVoter(voter).gauges(plugins[i]);
-            if (IPlugin(plugins[i]).balanceOf(account) > 0) {
-                rewardsOTOKEN += (IGauge(gauge).getRewardForDuration(OTOKEN) * IGauge(gauge).balanceOf(account) / IGauge(gauge).totalSupply());
-            }
-        }
-
-        portfolio.farmingRewards = rewardsOTOKEN * ITOKEN(TOKEN).getOTokenPrice() * priceBASE / 1e36;
         
         return portfolio;
     }
