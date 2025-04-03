@@ -57,6 +57,11 @@ abstract contract Plugin is Ownable {
         _;
     }
 
+    modifier nonZeroAddress(address _address) {
+        if (_address == address(0)) revert Plugin__InvalidZeroAddress();
+        _;
+    }
+
     /*----------  FUNCTIONS  --------------------------------------------*/
 
     constructor(
@@ -118,32 +123,27 @@ abstract contract Plugin is Ownable {
         emit Plugin__SetName(_name);
     }
 
-    function setTreasury(address _treasury) external onlyOwner {
-        if (treasury != address(0)) revert Plugin__InvalidZeroAddress();
+    function setTreasury(address _treasury) external onlyOwner nonZeroAddress(_treasury) {
         treasury = _treasury;
         emit Plugin__SetTreasury(_treasury);
     }
 
-    function setAssetAuction(address _assetAuction) external onlyOwner {
-        if (assetAuction != address(0)) revert Plugin__InvalidZeroAddress();
+    function setAssetAuction(address _assetAuction) external onlyOwner nonZeroAddress(_assetAuction) {
         assetAuction = _assetAuction;
         emit Plugin__SetAssetAuction(_assetAuction);
     }
 
-    function setRewardAuction(address _rewardAuction) external onlyOwner {
-        if (rewardAuction != address(0)) revert Plugin__InvalidZeroAddress();
+    function setRewardAuction(address _rewardAuction) external onlyOwner nonZeroAddress(_rewardAuction) {
         rewardAuction = _rewardAuction;
         emit Plugin__SetRewardAuction(_rewardAuction);
     }
 
-    function setGauge(address _gauge) external onlyVoter {
-        if (gauge != address(0)) revert Plugin__InvalidZeroAddress();
+    function setGauge(address _gauge) external onlyVoter nonZeroAddress(_gauge) {
         gauge = _gauge;
         emit Plugin__SetGauge(_gauge);
     }
 
-    function setBribe(address _bribe) external onlyVoter {
-        if (bribe != address(0)) revert Plugin__InvalidZeroAddress();
+    function setBribe(address _bribe) external onlyVoter nonZeroAddress(_bribe) {
         bribe = _bribe;
         emit Plugin__SetBribe(_bribe);
     }
