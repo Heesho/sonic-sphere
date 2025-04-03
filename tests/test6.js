@@ -27,9 +27,6 @@ let VTOKENFactory,
   bribeFactory;
 let minter, voter, fees, rewarder, governance, multicall;
 let TOKEN, VTOKEN, OTOKEN, BASE;
-let pluginFactory;
-let LP0, plugin0, gauge0, bribe0;
-let LP1, plugin1, gauge1, bribe1;
 
 describe("test6", function () {
   before("Initial set up", async function () {
@@ -200,74 +197,6 @@ describe("test6", function () {
     await minter.initialize();
     console.log("- System set up");
 
-    const PluginFactoryArtifact = await ethers.getContractFactory(
-      "PluginFactory"
-    );
-    const PluginFactoryContract = await PluginFactoryArtifact.deploy(
-      voter.address
-    );
-    pluginFactory = await ethers.getContractAt(
-      "PluginFactory",
-      PluginFactoryContract.address
-    );
-    console.log("- PluginFactory Initialized");
-
-    await pluginFactory.createPlugin(
-      LP0.address,
-      [LP0.address],
-      "LP0",
-      oneHundred,
-      oneHundred
-    );
-    plugin0 = await ethers.getContractAt(
-      "contracts/PluginFactory.sol:Plugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin0 Initialized");
-
-    await pluginFactory.createPlugin(
-      LP1.address,
-      [LP1.address],
-      "LP1",
-      ten,
-      five
-    );
-    plugin1 = await ethers.getContractAt(
-      "contracts/PluginFactory.sol:Plugin",
-      await pluginFactory.last_plugin()
-    );
-    console.log("- Plugin1 Initialized");
-
-    // add Plugin0 to Voter
-    await voter.addPlugin(plugin0.address);
-    let Gauge0Address = await voter.gauges(plugin0.address);
-    let Bribe0Address = await voter.bribes(plugin0.address);
-    gauge0 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge0Address
-    );
-    bribe0 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe0Address
-    );
-    await plugin0.initialize();
-    console.log("- Plugin0 Added in Voter");
-
-    // add Plugin1 to Voter
-    await voter.addPlugin(plugin1.address);
-    let Gauge1Address = await voter.gauges(plugin1.address);
-    let Bribe1Address = await voter.bribes(plugin1.address);
-    gauge1 = await ethers.getContractAt(
-      "contracts/GaugeFactory.sol:Gauge",
-      Gauge1Address
-    );
-    bribe1 = await ethers.getContractAt(
-      "contracts/BribeFactory.sol:Bribe",
-      Bribe1Address
-    );
-    await plugin1.initialize();
-    console.log("- Plugin1 Added in Voter");
-
     console.log("Initialization Complete");
     console.log();
   });
@@ -277,11 +206,5 @@ describe("test6", function () {
     await BASE.mint(user0.address, 1000);
     await BASE.mint(user1.address, 1000);
     await BASE.mint(user2.address, 1000);
-    await LP0.mint(user0.address, 100);
-    await LP0.mint(user1.address, 100);
-    await LP0.mint(user2.address, 100);
-    await LP1.mint(user0.address, 100);
-    await LP1.mint(user1.address, 100);
-    await LP1.mint(user2.address, 100);
   });
 });

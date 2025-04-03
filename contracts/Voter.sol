@@ -5,13 +5,45 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "contracts/interfaces/IVTOKEN.sol";
-import "contracts/interfaces/IPlugin.sol";
-import "contracts/interfaces/IGauge.sol";
-import "contracts/interfaces/IBribe.sol";
-import "contracts/interfaces/IMinter.sol";
-import "contracts/interfaces/IGaugeFactory.sol";
-import "contracts/interfaces/IBribeFactory.sol";
+
+interface IVTOKEN {
+    function OTOKEN() external view returns (address);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface IPlugin {
+    function setGauge(address _gauge) external;
+    function setBribe(address _bribe) external;
+}
+
+interface IGauge {
+    function _deposit(address account, uint256 amount) external;
+    function getReward(address account) external;
+    function left(address token) external view returns (uint256);
+    function notifyRewardAmount(address token, uint256 amount) external;
+    function addReward(address _rewardToken) external;
+}
+
+interface IBribe {
+    function _deposit(uint256 amount, address account) external;
+    function _withdraw(uint256 amount, address account) external;
+    function balanceOf(address account) external view returns (uint256);
+    function getReward(address account) external;
+    function addReward(address _rewardToken) external;
+}
+
+interface IMinter {
+    function update_period() external;
+    function team() external view returns (address);
+}
+
+interface IGaugeFactory {
+    function createGauge(address voter, address plugin) external returns (address);
+}
+
+interface IBribeFactory {
+    function createBribe(address voter) external returns (address);
+}
 
 /**
  * @title Voter
@@ -162,17 +194,7 @@ contract Voter is ReentrancyGuard, Ownable {
             IBribe(_bribes[i]).getReward(msg.sender);
         }
     }
-
-    /**
-     * @notice Claims voting rewards for each plugin and distributes it to corresponding bribe contracts
-     * @param _plugins list of plugins to claim rewards and distribute from
-     */
-    function distributeToBribes(address[] memory _plugins) external {
-        for (uint i = 0; i < _plugins.length; i++) {
-            IPlugin(_plugins[i]).claimAndDistribute();
-        }
-    }
-
+    
     /**
      * @notice Distributes OTOKEN to _gauge, notifies gauge contract to start distributing OTOKEN to plugin depositors.
      * @param _gauge gauge to distribute OTOKEN to
@@ -261,10 +283,6 @@ contract Voter is ReentrancyGuard, Ownable {
         IERC20(OTOKEN).approve(_gauge, type(uint).max);
 
         address _bribe = IBribeFactory(bribefactory).createBribe(address(this));
-        address[] memory _bribeTokens = IPlugin(_plugin).getBribeTokens();
-        for (uint256 i = 0; i < _bribeTokens.length; i++) {
-            IBribe(_bribe).addReward(_bribeTokens[i]);
-        }
         IPlugin(_plugin).setBribe(_bribe);
 
         gauges[_plugin] = _gauge;

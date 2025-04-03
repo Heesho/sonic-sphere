@@ -2,15 +2,74 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "contracts/interfaces/ITOKEN.sol";
-import "contracts/interfaces/IVTOKEN.sol";
-import "contracts/interfaces/IVTOKENRewarder.sol";
-import "contracts/interfaces/IMinter.sol";
-import "contracts/interfaces/IGauge.sol";
-import "contracts/interfaces/IBribe.sol";
-import "contracts/interfaces/IVoter.sol";
-import "contracts/interfaces/IPlugin.sol";
 import "./FixedPointMathLib.sol";
+
+interface ITOKEN {
+    function SWAP_FEE() external view returns (uint256);
+    function frBASE() external view returns (uint256);
+    function mrvBASE() external view returns (uint256);
+    function mrrBASE() external view returns (uint256);
+    function mrrTOKEN() external view returns (uint256);
+    function getMarketPrice() external view returns (uint256);
+    function getOTokenPrice() external view returns (uint256);
+    function getTotalValueLocked() external view returns (uint256);
+    function getFloorPrice() external view returns (uint256);
+    function getMaxSell() external view returns (uint256);
+    function getAccountCredit(address account) external view returns (uint256);
+    function debts(address account) external view returns (uint256);
+}
+
+interface IVTOKEN {
+    function totalSupplyTOKEN() external view returns (uint256);
+    function balanceOfTOKEN(address account) external view returns (uint256);
+}
+
+interface IVTOKENRewarder {
+    function getRewardForDuration(address token) external view returns (uint256);
+    function earned(address account, address token) external view returns (uint256);
+}
+
+interface IMinter {
+    function weekly() external view returns (uint256);
+}
+
+interface IPlugin {
+    function tvl() external view returns (uint256);
+    function votingWeight() external view returns (uint256);
+    function auctionEpochPerdiod() external view returns (uint256);
+    function auctionPriceMultiplier() external view returns (uint256);
+    function auctionMinInitPrice() external view returns (uint256);
+    function getAssetAuction() external view returns (address);
+    function getRewardAuction() external view returns (address);
+    function getTreasury() external view returns (address);
+    function getName() external view returns (string memory);
+    function getProtocol() external view returns (string memory);
+    function getAsset() external view returns (address);
+    function isInitialized() external view returns (bool);
+
+}
+
+interface IBribe {
+    function totalSupply() external view returns (uint256);
+    function getRewardForDuration(address token) external view returns (uint256);
+    function left(address token) external view returns (uint256);
+    function getRewardTokens() external view returns (address[] memory);
+    function earned(address account, address token) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface IVoter {
+    function totalWeight() external view returns (uint256);
+    function weights(address plugin) external view returns (uint256);
+    function usedWeights(address account) external view returns (uint256);
+    function lastVoted(address account) external view returns (uint256);
+    function gauges(address plugin) external view returns (address);
+    function bribes(address plugin) external view returns (address);
+    function isAlive(address gauge) external view returns (bool);
+    function plugins(uint256 index) external view returns (address);
+    function getPlugins() external view returns (address[] memory);
+    function minter() external view returns (address);
+}
 
 contract Multicall {
     using FixedPointMathLib for uint256;
@@ -72,25 +131,32 @@ contract Multicall {
         uint256 accountLastVoted;       
     }
 
-    struct GaugeCard {
-        address plugin;                     
-        address token;
-        uint8 tokenDecimals;
+    struct PluginCard {
 
-        address gauge;                       
-        bool isAlive;                       
-               
-        string name;                       
-        address[] assetTokens;              
+        bool isAlive;       
+        bool isInitialized;
+        uint8 assetDecimals;
 
-        uint256 priceBase;
-        uint256 priceOTOKEN;
+        uint256 tvl;
+        uint256 votingWeight;
 
+        uint256 auctionEpochPerdiod;
+        uint256 auctionPriceMultiplier;
+        uint256 auctionMinInitPrice;
+        uint256 auctionInitPrice;
+        uint256 auctionStartTime;
+        uint256 auctionPrice;
+        uint256 offeredOTOKEN;
 
-       
-        uint256 votingWeight;                               
+        address plugin;
+        address asset;
+        address gauge;
+        address bribe;
+        address assetAuction;
+        address rewardAuction;
+        address treasury;
 
-        uint256 accountTokenBalance;   
+        string name;
     }
 
     struct BribeCard {
@@ -190,31 +256,24 @@ contract Multicall {
         return bondingCurve;
     }
 
-    function gaugeCardData(address plugin, address account) public view returns (GaugeCard memory gaugeCard) {
-        gaugeCard.plugin = plugin;
-        gaugeCard.token = IPlugin(plugin).getToken();
-        gaugeCard.tokenDecimals = IERC20Metadata(gaugeCard.token).decimals();
+    function pluginCardData(address plugin) public view returns (PluginCard memory pluginCard) {
+        pluginCard.plugin = plugin;
+        pluginCard.gauge = IVoter(voter).gauges(plugin);
+        pluginCard.bribe = IVoter(voter).bribes(plugin);
+        pluginCard.assetAuction = IPlugin(plugin).getAssetAuction();
+        pluginCard.rewardAuction = IPlugin(plugin).getRewardAuction();
+        pluginCard.treasury = IPlugin(plugin).getTreasury();
+        pluginCard.name = IPlugin(plugin).getName();
 
-        gaugeCard.gauge = IVoter(voter).gauges(plugin);
-        gaugeCard.isAlive = IVoter(voter).isAlive(gaugeCard.gauge);
-        
-        gaugeCard.protocol = IPlugin(plugin).getProtocol(); 
-        gaugeCard.name = IPlugin(plugin).getName();
-        gaugeCard.assetTokens = IPlugin(plugin).getAssetTokens();
+        pluginCard.asset = IPlugin(plugin).getAsset();
+        pluginCard.assetDecimals = IERC20Metadata(pluginCard.asset).decimals();
 
-        gaugeCard.priceBase = getBasePrice();
-        gaugeCard.priceOTOKEN = ITOKEN(TOKEN).getOTokenPrice() * (gaugeCard.priceBase) / 1e18;
-        
-        gaugeCard.rewardPerToken = IGauge(gaugeCard.gauge).totalSupply() == 0 ? 0 : (IGauge(IVoter(voter).gauges(plugin)).getRewardForDuration(OTOKEN) * 1e18 / IGauge(gaugeCard.gauge).totalSupply());
-        gaugeCard.rewardPerTokenUSD = IGauge(gaugeCard.gauge).totalSupply() == 0 ? 0 : (IGauge(IVoter(voter).gauges(plugin)).getRewardForDuration(OTOKEN) * gaugeCard.priceOTOKEN / IGauge(gaugeCard.gauge).totalSupply());
-        gaugeCard.votingWeight = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
-        gaugeCard.totalSupply = IGauge(gaugeCard.gauge).totalSupply();
+        pluginCard.isAlive = IVoter(voter).isAlive(IVoter(voter).gauges(plugin));
+        pluginCard.isInitialized = IPlugin(plugin).isInitialized();
 
-        gaugeCard.accountTokenBalance = (account == address(0) ? 0 : IERC20(gaugeCard.token).balanceOf(account));
-        gaugeCard.accountStakedBalance = (account == address(0) ? 0 : IPlugin(plugin).balanceOf(account));
-        gaugeCard.accountEarnedOTOKEN = (account == address(0) ? 0 : IGauge(IVoter(voter).gauges(plugin)).earned(account, OTOKEN));
+        pluginCard.tvl = IPlugin(plugin).tvl();
+        pluginCard.votingWeight = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
 
-        return gaugeCard;
     }
 
     function bribeCardData(address plugin, address account) public view returns (BribeCard memory bribeCard) {
@@ -258,12 +317,12 @@ contract Multicall {
         return bribeCard;
     }
 
-    function getGaugeCards(uint256 start, uint256 stop, address account) external view returns (GaugeCard[] memory) {
-        GaugeCard[] memory gaugeCards = new GaugeCard[](stop - start);
+    function getPluginCards(uint256 start, uint256 stop) external view returns (PluginCard[] memory) {
+        PluginCard[] memory pluginCards = new PluginCard[](stop - start);
         for (uint i = start; i < stop; i++) {
-            gaugeCards[i] = gaugeCardData(getPlugin(i), account);
+            pluginCards[i] = pluginCardData(getPlugin(i));
         }
-        return gaugeCards;
+        return pluginCards;
     }
 
     function getBribeCards(uint256 start, uint256 stop, address account) external view returns (BribeCard[] memory) {

@@ -8,11 +8,33 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "contracts/interfaces/IVoter.sol";
-import "contracts/interfaces/ITOKEN.sol";
-import "contracts/interfaces/IOTOKEN.sol";
-import "contracts/interfaces/IVTOKENRewarder.sol";
-import "contracts/interfaces/IVTOKENRewarderFactory.sol";
+
+interface IVoter {
+    function usedWeights(address account) external view returns (uint256);
+}
+
+interface ITOKEN {
+    function debts(address account) external view returns (uint256);
+}
+
+interface IOTOKEN {
+    function burnFrom(address account, uint256 amount) external;
+}
+
+interface IVTOKENRewarder {
+    function _deposit(uint256 amount, address account) external;
+    function _withdraw(uint256 amount, address account) external;
+    function addReward(address _rewardToken) external;
+}
+
+interface IVTOKENRewarderFactory {
+    function createVTokenRewarder(address vToken) external returns (address);
+}
+
+interface IVTOKEN {
+    function totalSupplyTOKEN() external view returns (uint256);
+    function balanceOfTOKEN(address account) external view returns (uint256);
+}
 
 /**
  * @title VTOKEN

@@ -5,12 +5,27 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "contracts/interfaces/IOTOKEN.sol";
-import "contracts/interfaces/IVTOKEN.sol";
-import "contracts/interfaces/IOTOKENFactory.sol";
-import "contracts/interfaces/IVTOKENFactory.sol";
-import "contracts/interfaces/ITOKENFeesFactory.sol";
 import "./FixedPointMathLib.sol";
+
+interface IOTOKEN {
+    function burnFrom(address account, uint256 amount) external;
+}
+
+interface IVTOKEN {
+    function balanceOfTOKEN(address account) external view returns (uint256);
+}
+
+interface IOTOKENFactory {
+    function createOToken(address owner) external returns (address);
+}
+
+interface IVTOKENFactory {
+    function createVToken(address token, address otoken, address rewarder, address owner) external returns (address, address);
+}
+
+interface ITOKENFeesFactory {
+    function createTokenFees(address rewarder, address token, address base, address otoken) external returns (address);
+}
 
 /**
  * @title TOKEN Bonding Curve

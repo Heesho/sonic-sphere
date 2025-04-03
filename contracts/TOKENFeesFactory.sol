@@ -4,8 +4,20 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "contracts/interfaces/ITOKEN.sol";
-import "contracts/interfaces/IVTOKENRewarder.sol";
+
+interface ITOKEN {
+    function SWAP_FEE() external view returns (uint256);
+    function frBASE() external view returns (uint256);
+    function mrvBASE() external view returns (uint256);
+    function mrrBASE() external view returns (uint256);
+    function mrrTOKEN() external view returns (uint256);
+}
+
+interface IVTOKENRewarder {
+    function getRewardForDuration(address token) external view returns (uint256);
+    function earned(address account, address token) external view returns (uint256);
+    function notifyRewardAmount(address token, uint256 amount) external;
+}
 
 /**
  * @title TOKENFees

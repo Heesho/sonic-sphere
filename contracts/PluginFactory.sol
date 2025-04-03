@@ -3,8 +3,15 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "contracts/interfaces/IGauge.sol";
-import "contracts/interfaces/IVoter.sol";
+
+interface IGauge {
+    function _deposit(address account, uint256 amount) external;
+    function getReward(address account) external;
+}
+
+interface IVoter {
+    function OTOKEN() external view returns (address);
+}
 
 abstract contract Plugin is Ownable {
     using SafeERC20 for IERC20;
