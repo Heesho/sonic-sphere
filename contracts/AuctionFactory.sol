@@ -3,7 +3,11 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract DutchAuction {
+interface IPlugin {
+    function deposit(uint256 amount) external;
+}
+
+contract Auction {
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
@@ -36,42 +40,42 @@ contract DutchAuction {
 
     /*----------  ERRORS ------------------------------------------------*/
 
-    error DutchAuction__DeadlinePassed();
-    error DutchAuction__EpochIdMismatch();
-    error DutchAuction__MaxPaymentAmountExceeded();
-    error DutchAuction__EmptyAssets();
-    error DutchAuction__Reentrancy();
-    error DutchAuction__InitPriceBelowMin();
-    error DutchAuction__InitPriceExceedsMax();
-    error DutchAuction__EpochPeriodBelowMin();
-    error DutchAuction__EpochPeriodExceedsMax();
-    error DutchAuction__PriceMultiplierBelowMin();
-    error DutchAuction__PriceMultiplierExceedsMax();
-    error DutchAuction__MinInitPriceBelowMin();
-    error DutchAuction__MinInitPriceExceedsAbsMaxInitPrice();
-    error DutchAuction__PaymentReceiverIsThis();
+    error Auction__DeadlinePassed();
+    error Auction__EpochIdMismatch();
+    error Auction__MaxPaymentAmountExceeded();
+    error Auction__EmptyAssets();
+    error Auction__Reentrancy();
+    error Auction__InitPriceBelowMin();
+    error Auction__InitPriceExceedsMax();
+    error Auction__EpochPeriodBelowMin();
+    error Auction__EpochPeriodExceedsMax();
+    error Auction__PriceMultiplierBelowMin();
+    error Auction__PriceMultiplierExceedsMax();
+    error Auction__MinInitPriceBelowMin();
+    error Auction__MinInitPriceExceedsAbsMaxInitPrice();
+    error Auction__PaymentReceiverIsThis();
 
     /*----------  EVENTS ------------------------------------------------*/
 
-    event DutchAuction__Buy(address indexed buyer, address indexed assetsReceiver, uint256 paymentAmount);
+    event Auction__Buy(address indexed buyer, address indexed assetsReceiver, uint256 paymentAmount);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
     modifier nonReentrant() {
-        if (slot0.locked == 2) revert DutchAuction__Reentrancy();
+        if (slot0.locked == 2) revert Auction__Reentrancy();
         slot0.locked = 2;
         _;
         slot0.locked = 1;
     }
 
     modifier nonReentrantView() {
-        if (slot0.locked == 2) revert DutchAuction__Reentrancy();
+        if (slot0.locked == 2) revert Auction__Reentrancy();
         _;
     }
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
-    /// @dev Initializes the DutchAuction contract with the specified parameters.
+    /// @dev Initializes the Auction contract with the specified parameters.
     /// @param initPrice The initial price for the first epoch.
     /// @param paymentToken_ The address of the payment token.
     /// @param plugin_ The address of the plugin.
@@ -89,15 +93,15 @@ contract DutchAuction {
         uint256 priceMultiplier_,
         uint256 minInitPrice_
     ) {
-        if (initPrice < minInitPrice_) revert DutchAuction__InitPriceBelowMin();
-        if (initPrice > ABS_MAX_INIT_PRICE) revert DutchAuction__InitPriceExceedsMax();
-        if (epochPeriod_ < MIN_EPOCH_PERIOD) revert DutchAuction__EpochPeriodBelowMin();
-        if (epochPeriod_ > MAX_EPOCH_PERIOD) revert DutchAuction__EpochPeriodExceedsMax();
-        if (priceMultiplier_ < MIN_PRICE_MULTIPLIER) revert DutchAuction__PriceMultiplierBelowMin();
-        if (priceMultiplier_ > MAX_PRICE_MULTIPLIER) revert DutchAuction__PriceMultiplierExceedsMax();
-        if (minInitPrice_ < ABS_MIN_INIT_PRICE) revert DutchAuction__MinInitPriceBelowMin();
-        if (minInitPrice_ > ABS_MAX_INIT_PRICE) revert DutchAuction__MinInitPriceExceedsAbsMaxInitPrice();
-        if (paymentReceiver_ == address(this)) revert DutchAuction__PaymentReceiverIsThis();
+        if (initPrice < minInitPrice_) revert Auction__InitPriceBelowMin();
+        if (initPrice > ABS_MAX_INIT_PRICE) revert Auction__InitPriceExceedsMax();
+        if (epochPeriod_ < MIN_EPOCH_PERIOD) revert Auction__EpochPeriodBelowMin();
+        if (epochPeriod_ > MAX_EPOCH_PERIOD) revert Auction__EpochPeriodExceedsMax();
+        if (priceMultiplier_ < MIN_PRICE_MULTIPLIER) revert Auction__PriceMultiplierBelowMin();
+        if (priceMultiplier_ > MAX_PRICE_MULTIPLIER) revert Auction__PriceMultiplierExceedsMax();
+        if (minInitPrice_ < ABS_MIN_INIT_PRICE) revert Auction__MinInitPriceBelowMin();
+        if (minInitPrice_ > ABS_MAX_INIT_PRICE) revert Auction__MinInitPriceExceedsAbsMaxInitPrice();
+        if (paymentReceiver_ == address(this)) revert Auction__PaymentReceiverIsThis();
 
         slot0.initPrice = uint192(initPrice);
         slot0.startTime = uint40(block.timestamp);
@@ -126,21 +130,25 @@ contract DutchAuction {
         uint256 deadline,
         uint256 maxPaymentTokenAmount
     ) external nonReentrant returns (uint256 paymentAmount) {
-        if (block.timestamp > deadline) revert DutchAuction__DeadlinePassed();
-        if (assets.length == 0) revert DutchAuction__EmptyAssets();
+        if (block.timestamp > deadline) revert Auction__DeadlinePassed();
+        if (assets.length == 0) revert Auction__EmptyAssets();
 
         Slot0 memory slot0Cache = slot0;
 
-        if (uint16(epochId) != slot0Cache.epochId) revert DutchAuction__EpochIdMismatch();
+        if (uint16(epochId) != slot0Cache.epochId) revert Auction__EpochIdMismatch();
 
         paymentAmount = getPriceFromCache(slot0Cache);
 
-        if (paymentAmount > maxPaymentTokenAmount) revert DutchAuction__MaxPaymentAmountExceeded();
+        if (paymentAmount > maxPaymentTokenAmount) revert Auction__MaxPaymentAmountExceeded();
 
         if (paymentAmount > 0) {
-            paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
             if (plugin != address(0)) {
+                paymentToken.safeTransferFrom(msg.sender, address(this), paymentAmount);
+                paymentToken.safeApprove(plugin, 0);
+                paymentToken.safeApprove(plugin, paymentAmount);
                 IPlugin(plugin).deposit(paymentAmount);
+            } else {
+                paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
             }
         }
 
@@ -168,7 +176,7 @@ contract DutchAuction {
         // Write cache in single write
         slot0 = slot0Cache;
 
-        emit DutchAuction__Buy(msg.sender, assetsReceiver, paymentAmount);
+        emit Auction__Buy(msg.sender, assetsReceiver, paymentAmount);
 
         return paymentAmount;
     }
@@ -206,15 +214,15 @@ contract DutchAuction {
     }
 }
 
-contract DutchAuctionFactory {
+contract AuctionFactory {
 
     address public last_auction;
 
-    event DutchAuctionFactory__DutchAuctionCreated(address auction);
+    event AuctionFactory__AuctionCreated(address auction);
 
     constructor() {}
 
-    function createDutchAuction(
+    function createAuction(
         uint256 initPrice,
         address paymentToken_,
         address plugin_,
@@ -223,9 +231,9 @@ contract DutchAuctionFactory {
         uint256 priceMultiplier_,
         uint256 minInitPrice_
     ) external returns (address) {
-        DutchAuction auction = new DutchAuction(initPrice, paymentToken_, plugin_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
+        Auction auction = new Auction(initPrice, paymentToken_, plugin_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
         last_auction = address(auction);
-        emit DutchAuctionFactory__DutchAuctionCreated(address(auction));
+        emit AuctionFactory__AuctionCreated(address(auction));
         return address(auction);
     }
     

@@ -15,7 +15,7 @@ abstract contract Plugin is Ownable {
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
-    string private immutable name;
+    string private name;
     address private immutable voter;
     address private immutable otoken;
     address private immutable asset;
@@ -24,18 +24,31 @@ abstract contract Plugin is Ownable {
     address private assetAuction;
     address private rewardAuction;
     address private treasury;
-    uint256 private balance;
+    uint256 private tvl;
     bool private initialized;
 
     /*----------  ERRORS ------------------------------------------------*/
 
     error Plugin__Initialized();
     error Plugin__NotAuthorizedVoter();
+    error Plugin__InvalidZeroAddress();
+    error Plugin__AssetAuctionNotSet();
+    error Plugin__RewardAuctionNotSet();
+    error Plugin__CannotDistributeAsset();
 
     /*----------  EVENTS ------------------------------------------------*/
 
     event Plugin__Deposit(uint256 amount);
-    event Plugin__ClaimGaugeRewards(uint256 amount);
+    event Plugin__Claim();
+    event Plugin__DistributeAssetAuction(address indexed assetAuction, address indexed rewardToken, uint256 amount);
+    event Plugin__DistributeRewardAuction(address indexed rewardAuction, address indexed rewardToken, uint256 amount);
+    event Plugin__Withdraw(uint256 amount);
+    event Plugin__SetName(string name);
+    event Plugin__SetTreasury(address indexed treasury);
+    event Plugin__SetAssetAuction(address indexed assetAuction);
+    event Plugin__SetRewardAuction(address indexed rewardAuction);
+    event Plugin__SetGauge(address indexed gauge);
+    event Plugin__SetBribe(address indexed bribe);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -63,20 +76,14 @@ abstract contract Plugin is Ownable {
         IGauge(gauge)._deposit(address(this), GAUGE_DEPOSIT_AMOUNT);
     }
 
-    function deposit() public virtual {
-        uint256 oldBalance = balance;
-        uint256 newBalance = IERC20(asset).balanceOf(address(this));
-        balance = newBalance;
-        emit Plugin__Deposit(newBalance - oldBalance);
+    function deposit(uint256 amount) public virtual {
+        tvl += amount;
+        IERC20(asset).safeTransferFrom(msg.sender, address(this), amount);
+        emit Plugin__Deposit(amount);
     }
 
-    function claimGaugeRewards() public virtual {
-        IGauge(gauge).getReward(address(this));
-        emit Plugin__ClaimGaugeRewards();
-    }
-
-    function claimAssetRewards() public virtual {
-        emit Plugin__ClaimAssetRewards();
+    function claim() public virtual {
+        emit Plugin__Claim();
     }
 
     function distribute(address[] memory rewardTokens) public virtual {
@@ -84,6 +91,7 @@ abstract contract Plugin is Ownable {
             if (rewardTokens[i] == asset) revert Plugin__CannotDistributeAsset();
             if (rewardTokens[i] == otoken) {
                 if (assetAuction == address(0)) revert Plugin__AssetAuctionNotSet();
+                IGauge(gauge).getReward(address(this));
                 uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
                 IERC20(rewardTokens[i]).safeTransfer(assetAuction, balance);
                 emit Plugin__DistributeAssetAuction(assetAuction, rewardTokens[i], balance);
@@ -99,21 +107,15 @@ abstract contract Plugin is Ownable {
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
     function withdraw() external virtual onlyOwner {
+        tvl = 0;
         uint256 balance = IERC20(asset).balanceOf(address(this));
         IERC20(asset).safeTransfer(treasury, balance);
         emit Plugin__Withdraw(balance);
     }
 
-    function setGauge(address _gauge) external onlyVoter {
-        if (gauge != address(0)) revert Plugin__InvalidZeroAddress();
-        gauge = _gauge;
-        emit Plugin__SetGauge(_gauge);
-    }
-
-    function setBribe(address _bribe) external onlyVoter {
-        if (bribe != address(0)) revert Plugin__InvalidZeroAddress();
-        bribe = _bribe;
-        emit Plugin__SetBribe(_bribe);
+    function setName(string memory _name) external onlyOwner {
+        name = _name;
+        emit Plugin__SetName(_name);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -132,6 +134,18 @@ abstract contract Plugin is Ownable {
         if (rewardAuction != address(0)) revert Plugin__InvalidZeroAddress();
         rewardAuction = _rewardAuction;
         emit Plugin__SetRewardAuction(_rewardAuction);
+    }
+
+    function setGauge(address _gauge) external onlyVoter {
+        if (gauge != address(0)) revert Plugin__InvalidZeroAddress();
+        gauge = _gauge;
+        emit Plugin__SetGauge(_gauge);
+    }
+
+    function setBribe(address _bribe) external onlyVoter {
+        if (bribe != address(0)) revert Plugin__InvalidZeroAddress();
+        bribe = _bribe;
+        emit Plugin__SetBribe(_bribe);
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
@@ -168,8 +182,8 @@ abstract contract Plugin is Ownable {
         return treasury;
     }
 
-    function getBalance() public view returns (uint256) {
-        return balance;
+    function getTvl() public view returns (uint256) {
+        return tvl;
     }
 
     function getInitialized() public view returns (bool) {
