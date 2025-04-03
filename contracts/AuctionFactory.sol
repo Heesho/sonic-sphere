@@ -19,6 +19,7 @@ contract DutchAuction {
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     IERC20 public immutable paymentToken;
+    address public immutable plugin;
     address public immutable paymentReceiver;
     uint256 public immutable epochPeriod;
     uint256 public immutable priceMultiplier;
@@ -73,6 +74,7 @@ contract DutchAuction {
     /// @dev Initializes the DutchAuction contract with the specified parameters.
     /// @param initPrice The initial price for the first epoch.
     /// @param paymentToken_ The address of the payment token.
+    /// @param plugin_ The address of the plugin.
     /// @param paymentReceiver_ The address of the payment receiver.
     /// @param epochPeriod_ The duration of each epoch period.
     /// @param priceMultiplier_ The multiplier for adjusting the price from one epoch to the next.
@@ -81,6 +83,7 @@ contract DutchAuction {
     constructor(
         uint256 initPrice,
         address paymentToken_,
+        address plugin_,
         address paymentReceiver_,
         uint256 epochPeriod_,
         uint256 priceMultiplier_,
@@ -100,6 +103,7 @@ contract DutchAuction {
         slot0.startTime = uint40(block.timestamp);
 
         paymentToken = IERC20(paymentToken_);
+        plugin = plugin_;
         paymentReceiver = paymentReceiver_;
         epochPeriod = epochPeriod_;
         priceMultiplier = priceMultiplier_;
@@ -135,6 +139,9 @@ contract DutchAuction {
 
         if (paymentAmount > 0) {
             paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
+            if (plugin != address(0)) {
+                IPlugin(plugin).deposit(paymentAmount);
+            }
         }
 
         for (uint256 i = 0; i < assets.length; i++) {
@@ -210,12 +217,13 @@ contract DutchAuctionFactory {
     function createDutchAuction(
         uint256 initPrice,
         address paymentToken_,
+        address plugin_,
         address paymentReceiver_,
         uint256 epochPeriod_,
         uint256 priceMultiplier_,
         uint256 minInitPrice_
     ) external returns (address) {
-        DutchAuction auction = new DutchAuction(initPrice, paymentToken_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
+        DutchAuction auction = new DutchAuction(initPrice, paymentToken_, plugin_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
         last_auction = address(auction);
         emit DutchAuctionFactory__DutchAuctionCreated(address(auction));
         return address(auction);

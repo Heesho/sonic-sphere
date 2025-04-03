@@ -2,21 +2,11 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "contracts/interfaces/IGauge.sol";
 import "contracts/interfaces/IVoter.sol";
 
-interface IDutchAuctionFactory {
-    function createDutchAuction(
-        uint256 initPrice,
-        address paymentToken_,
-        address paymentReceiver_,
-        uint256 epochPeriod_,
-        uint256 priceMultiplier_,
-        uint256 minInitPrice_
-    ) external returns (address);
-}
-
-abstract contract Plugin {
+abstract contract Plugin is Ownable {
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
@@ -27,11 +17,14 @@ abstract contract Plugin {
 
     string private immutable name;
     address private immutable voter;
-    address private immutable token;
+    address private immutable otoken;
+    address private immutable asset;
     address private gauge;
     address private bribe;
     address private assetAuction;
     address private rewardAuction;
+    address private treasury;
+    uint256 private balance;
     bool private initialized;
 
     /*----------  ERRORS ------------------------------------------------*/
@@ -40,6 +33,9 @@ abstract contract Plugin {
     error Plugin__NotAuthorizedVoter();
 
     /*----------  EVENTS ------------------------------------------------*/
+
+    event Plugin__Deposit(uint256 amount);
+    event Plugin__ClaimGaugeRewards(uint256 amount);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -53,18 +49,12 @@ abstract contract Plugin {
     constructor(
         string memory _name,
         address _voter, 
-        address _token, 
-        uint256 initPrice,
-        address paymentToken,
-        address paymentReceiver,
-        uint256 epochPeriod,
-        uint256 priceMultiplier,
-        uint256 minInitPrice
+        address _asset
     ) {
-
-        voter = _voter;
         name = _name;
-        token = _token;
+        voter = _voter;
+        asset = _asset;
+        otoken = IVoter(voter).OTOKEN();
     }
 
     function initialize() external {
@@ -73,26 +63,75 @@ abstract contract Plugin {
         IGauge(gauge)._deposit(address(this), GAUGE_DEPOSIT_AMOUNT);
     }
 
-    // deposit
+    function deposit() public virtual {
+        uint256 oldBalance = balance;
+        uint256 newBalance = IERC20(asset).balanceOf(address(this));
+        balance = newBalance;
+        emit Plugin__Deposit(newBalance - oldBalance);
+    }
 
-    // claim
+    function claimGaugeRewards() public virtual {
+        IGauge(gauge).getReward(address(this));
+        emit Plugin__ClaimGaugeRewards();
+    }
 
-    // distribute
+    function claimAssetRewards() public virtual {
+        emit Plugin__ClaimAssetRewards();
+    }
+
+    function distribute(address[] memory rewardTokens) public virtual {
+        for (uint256 i = 0; i < rewardTokens.length; i++) {
+            if (rewardTokens[i] == asset) revert Plugin__CannotDistributeAsset();
+            if (rewardTokens[i] == otoken) {
+                if (assetAuction == address(0)) revert Plugin__AssetAuctionNotSet();
+                uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
+                IERC20(rewardTokens[i]).safeTransfer(assetAuction, balance);
+                emit Plugin__DistributeAssetAuction(assetAuction, rewardTokens[i], balance);
+            } else {
+                if (rewardAuction == address(0)) revert Plugin__RewardAuctionNotSet();
+                uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
+                IERC20(rewardTokens[i]).safeTransfer(rewardAuction, balance);
+                emit Plugin__DistributeRewardAuction(rewardAuction, rewardTokens[i], balance);
+            }
+        }
+    }
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
-    // withdraw
+    function withdraw() external virtual onlyOwner {
+        uint256 balance = IERC20(asset).balanceOf(address(this));
+        IERC20(asset).safeTransfer(treasury, balance);
+        emit Plugin__Withdraw(balance);
+    }
 
     function setGauge(address _gauge) external onlyVoter {
+        if (gauge != address(0)) revert Plugin__InvalidZeroAddress();
         gauge = _gauge;
+        emit Plugin__SetGauge(_gauge);
     }
 
     function setBribe(address _bribe) external onlyVoter {
+        if (bribe != address(0)) revert Plugin__InvalidZeroAddress();
         bribe = _bribe;
+        emit Plugin__SetBribe(_bribe);
     }
 
-    function setAuction(address _auction) external onlyOwner {
-        auction = _auction;
+    function setTreasury(address _treasury) external onlyOwner {
+        if (treasury != address(0)) revert Plugin__InvalidZeroAddress();
+        treasury = _treasury;
+        emit Plugin__SetTreasury(_treasury);
+    }
+
+    function setAssetAuction(address _assetAuction) external onlyOwner {
+        if (assetAuction != address(0)) revert Plugin__InvalidZeroAddress();
+        assetAuction = _assetAuction;
+        emit Plugin__SetAssetAuction(_assetAuction);
+    }
+
+    function setRewardAuction(address _rewardAuction) external onlyOwner {
+        if (rewardAuction != address(0)) revert Plugin__InvalidZeroAddress();
+        rewardAuction = _rewardAuction;
+        emit Plugin__SetRewardAuction(_rewardAuction);
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
@@ -104,6 +143,10 @@ abstract contract Plugin {
     function getVoter() public view returns (address) {
         return voter;
     }
+    
+    function getOtoken() public view returns (address) {
+        return otoken;
+    }
 
     function getGauge() public view returns (address) {
         return gauge;
@@ -113,8 +156,24 @@ abstract contract Plugin {
         return bribe;
     }
 
-    function getAuction() public view returns (address) {
-        return auction;
+    function getAssetAuction() public view returns (address) {
+        return assetAuction;
+    }
+
+    function getRewardAuction() public view returns (address) {
+        return rewardAuction;
+    }
+
+    function getTreasury() public view returns (address) {
+        return treasury;
+    }
+
+    function getBalance() public view returns (uint256) {
+        return balance;
+    }
+
+    function getInitialized() public view returns (bool) {
+        return initialized;
     }
 
 }
