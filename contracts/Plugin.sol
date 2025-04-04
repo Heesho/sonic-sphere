@@ -34,6 +34,8 @@ abstract contract Plugin is Ownable {
     uint256 private tvl;
     bool private initialized;
 
+    address[] private rewardTokens;
+
     /*----------  ERRORS ------------------------------------------------*/
 
     error Plugin__Initialized();
@@ -54,6 +56,7 @@ abstract contract Plugin is Ownable {
     event Plugin__SetTreasury(address indexed treasury);
     event Plugin__SetAssetAuction(address indexed assetAuction);
     event Plugin__SetRewardAuction(address indexed rewardAuction);
+    event Plugin__SetRewardTokens(address[] rewardTokens);
     event Plugin__SetGauge(address indexed gauge);
     event Plugin__SetBribe(address indexed bribe);
 
@@ -74,11 +77,14 @@ abstract contract Plugin is Ownable {
     constructor(
         string memory _name,
         address _voter, 
-        address _asset
+        address _asset,
+        address[] memory _rewardTokens
     ) {
         name = _name;
         voter = _voter;
         asset = _asset;
+        rewardTokens = _rewardTokens;
+
         otoken = IVoter(voter).OTOKEN();
     }
 
@@ -98,20 +104,20 @@ abstract contract Plugin is Ownable {
         emit Plugin__Claim();
     }
 
-    function distribute(address[] memory rewardTokens) public virtual {
-        for (uint256 i = 0; i < rewardTokens.length; i++) {
-            if (rewardTokens[i] == asset) revert Plugin__CannotDistributeAsset();
-            if (rewardTokens[i] == otoken) {
+    function distribute(address[] memory tokens) public virtual {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] == asset) revert Plugin__CannotDistributeAsset();
+            if (tokens[i] == otoken) {
                 if (assetAuction == address(0)) revert Plugin__AssetAuctionNotSet();
                 IGauge(gauge).getReward(address(this));
-                uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
-                IERC20(rewardTokens[i]).safeTransfer(assetAuction, balance);
-                emit Plugin__DistributeAssetAuction(assetAuction, rewardTokens[i], balance);
+                uint256 balance = IERC20(tokens[i]).balanceOf(address(this));
+                IERC20(tokens[i]).safeTransfer(assetAuction, balance);
+                emit Plugin__DistributeAssetAuction(assetAuction, tokens[i], balance);
             } else {
                 if (rewardAuction == address(0)) revert Plugin__RewardAuctionNotSet();
-                uint256 balance = IERC20(rewardTokens[i]).balanceOf(address(this));
-                IERC20(rewardTokens[i]).safeTransfer(rewardAuction, balance);
-                emit Plugin__DistributeRewardAuction(rewardAuction, rewardTokens[i], balance);
+                uint256 balance = IERC20(tokens[i]).balanceOf(address(this));
+                IERC20(tokens[i]).safeTransfer(rewardAuction, balance);
+                emit Plugin__DistributeRewardAuction(rewardAuction, tokens[i], balance);
             }
         }
     }
@@ -143,6 +149,11 @@ abstract contract Plugin is Ownable {
     function setRewardAuction(address _rewardAuction) external onlyOwner nonZeroAddress(_rewardAuction) {
         rewardAuction = _rewardAuction;
         emit Plugin__SetRewardAuction(_rewardAuction);
+    }
+
+    function setRewardTokens(address[] memory _rewardTokens) external onlyOwner {
+        rewardTokens = _rewardTokens;
+        emit Plugin__SetRewardTokens(_rewardTokens);
     }
 
     function setGauge(address _gauge) external onlyVoter nonZeroAddress(_gauge) {
@@ -195,6 +206,10 @@ abstract contract Plugin is Ownable {
 
     function getInitialized() public view returns (bool) {
         return initialized;
+    }
+
+    function getRewardTokens() public view returns (address[] memory) {
+        return rewardTokens;
     }
 
 }

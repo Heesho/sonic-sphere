@@ -19,6 +19,19 @@ interface ITOKEN {
     function debts(address account) external view returns (uint256);
 }
 
+interface IVoter {
+    function totalWeight() external view returns (uint256);
+    function weights(address plugin) external view returns (uint256);
+    function usedWeights(address account) external view returns (uint256);
+    function lastVoted(address account) external view returns (uint256);
+    function gauges(address plugin) external view returns (address);
+    function bribes(address plugin) external view returns (address);
+    function isAlive(address gauge) external view returns (bool);
+    function plugins(uint256 index) external view returns (address);
+    function getPlugins() external view returns (address[] memory);
+    function minter() external view returns (address);
+}
+
 interface IVTOKEN {
     function totalSupplyTOKEN() external view returns (uint256);
     function balanceOfTOKEN(address account) external view returns (uint256);
@@ -33,22 +46,6 @@ interface IMinter {
     function weekly() external view returns (uint256);
 }
 
-interface IPlugin {
-    function tvl() external view returns (uint256);
-    function votingWeight() external view returns (uint256);
-    function auctionEpochPerdiod() external view returns (uint256);
-    function auctionPriceMultiplier() external view returns (uint256);
-    function auctionMinInitPrice() external view returns (uint256);
-    function getAssetAuction() external view returns (address);
-    function getRewardAuction() external view returns (address);
-    function getTreasury() external view returns (address);
-    function getName() external view returns (string memory);
-    function getProtocol() external view returns (string memory);
-    function getAsset() external view returns (address);
-    function isInitialized() external view returns (bool);
-
-}
-
 interface IBribe {
     function totalSupply() external view returns (uint256);
     function getRewardForDuration(address token) external view returns (uint256);
@@ -58,17 +55,33 @@ interface IBribe {
     function balanceOf(address account) external view returns (uint256);
 }
 
-interface IVoter {
-    function totalWeight() external view returns (uint256);
-    function weights(address plugin) external view returns (uint256);
-    function usedWeights(address account) external view returns (uint256);
-    function lastVoted(address account) external view returns (uint256);
-    function gauges(address plugin) external view returns (address);
-    function bribes(address plugin) external view returns (address);
-    function isAlive(address gauge) external view returns (bool);
-    function plugins(uint256 index) external view returns (address);
-    function getPlugins() external view returns (address[] memory);
-    function minter() external view returns (address);
+interface IPlugin {
+    function getName() external view returns (string memory);
+    function getAsset() external view returns (address);
+    function getRewardAuction() external view returns (address);
+    function getAssetAuction() external view returns (address);
+    function getTreasury() external view returns (address);
+    function getRewardTokens() external view returns (address[] memory);
+    function isInitialized() external view returns (bool);
+    function tvl() external view returns (uint256);
+}
+
+interface IAuction {
+    struct Slot0 {
+        uint8 locked; 
+        uint16 epochId; 
+        uint192 initPrice;
+        uint40 startTime;
+    }
+    function epochPeriod() external view returns (uint256);
+    function priceMultiplier() external view returns (uint256);
+    function minInitPrice() external view returns (uint256);
+    function getSlot0() external view returns (Slot0 memory);
+    function getPrice() external view returns (uint256);
+}
+
+interface IGauge {
+    function earned(address account, address token) external view returns (uint256);
 }
 
 contract Multicall {
@@ -132,21 +145,7 @@ contract Multicall {
     }
 
     struct PluginCard {
-
-        bool isAlive;       
-        bool isInitialized;
-        uint8 assetDecimals;
-
-        uint256 tvl;
-        uint256 votingWeight;
-
-        uint256 auctionEpochPerdiod;
-        uint256 auctionPriceMultiplier;
-        uint256 auctionMinInitPrice;
-        uint256 auctionInitPrice;
-        uint256 auctionStartTime;
-        uint256 auctionPrice;
-        uint256 offeredOTOKEN;
+        string name;
 
         address plugin;
         address asset;
@@ -155,28 +154,40 @@ contract Multicall {
         address assetAuction;
         address rewardAuction;
         address treasury;
+        address[] rewardTokens;
 
-        string name;
+        bool isAlive;       
+        bool isInitialized;
+        uint8 assetDecimals;
+
+        uint256 tvl;
+        uint256 votingWeight;
+        uint256 auctionEpochPerdiod;
+        uint256 auctionPriceMultiplier;
+        uint256 auctionMinInitPrice;
+        uint256 auctionInitPrice;
+        uint256 auctionStartTime;
+        uint256 auctionPrice;
+        uint256 offeredOTOKEN;
     }
 
     struct BribeCard {
-        address plugin;                 
-        address bribe;                  
-        bool isAlive;                   
+        address plugin;
+        address bribe;
+        bool isAlive;
 
-        string protocol;                
-        string name;                  
+        string name;
 
-        address[] rewardTokens;          
-        uint8[] rewardTokenDecimals;    
-        uint256[] rewardsPerToken;      
-        uint256[] accountRewardsEarned; 
-        uint256[] rewardsLeft; 
+        address[] rewardTokens;
+        uint8[] rewardTokenDecimals;
+        uint256[] rewardsPerToken;
+        uint256[] accountRewardsEarned;
+        uint256[] rewardsLeft;
 
-        uint256 voteWeight;             
-        uint256 votePercent;            
+        uint256 voteWeight;
+        uint256 votePercent;
 
-        uint256 accountVote;            
+        uint256 accountVote;
     }
 
     struct Portfolio {
@@ -257,23 +268,34 @@ contract Multicall {
     }
 
     function pluginCardData(address plugin) public view returns (PluginCard memory pluginCard) {
+        pluginCard.name = IPlugin(plugin).getName();
         pluginCard.plugin = plugin;
+        pluginCard.asset = IPlugin(plugin).getAsset();
         pluginCard.gauge = IVoter(voter).gauges(plugin);
         pluginCard.bribe = IVoter(voter).bribes(plugin);
         pluginCard.assetAuction = IPlugin(plugin).getAssetAuction();
         pluginCard.rewardAuction = IPlugin(plugin).getRewardAuction();
         pluginCard.treasury = IPlugin(plugin).getTreasury();
-        pluginCard.name = IPlugin(plugin).getName();
-
-        pluginCard.asset = IPlugin(plugin).getAsset();
-        pluginCard.assetDecimals = IERC20Metadata(pluginCard.asset).decimals();
-
-        pluginCard.isAlive = IVoter(voter).isAlive(IVoter(voter).gauges(plugin));
+        pluginCard.rewardTokens = IPlugin(plugin).getRewardTokens();
+        
+        pluginCard.isAlive = IVoter(voter).isAlive(pluginCard.gauge);
         pluginCard.isInitialized = IPlugin(plugin).isInitialized();
 
         pluginCard.tvl = IPlugin(plugin).tvl();
         pluginCard.votingWeight = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
 
+        pluginCard.auctionEpochPerdiod = IAuction(pluginCard.assetAuction).epochPeriod();
+        pluginCard.auctionPriceMultiplier = IAuction(pluginCard.assetAuction).priceMultiplier();
+        pluginCard.auctionMinInitPrice = IAuction(pluginCard.assetAuction).minInitPrice();
+        IAuction.Slot0 memory slot0 = IAuction(pluginCard.assetAuction).getSlot0();
+        pluginCard.auctionInitPrice = slot0.initPrice;
+        pluginCard.auctionStartTime = slot0.startTime;
+        pluginCard.auctionPrice = IAuction(pluginCard.assetAuction).getPrice();
+        pluginCard.offeredOTOKEN = IERC20(OTOKEN).balanceOf(pluginCard.assetAuction) 
+            + IERC20(OTOKEN).balanceOf(pluginCard.plugin) 
+            + IGauge(pluginCard.gauge).earned(pluginCard.plugin, OTOKEN);
+
+        return pluginCard;
     }
 
     function bribeCardData(address plugin, address account) public view returns (BribeCard memory bribeCard) {
@@ -281,9 +303,8 @@ contract Multicall {
         bribeCard.bribe = IVoter(voter).bribes(plugin);
         bribeCard.isAlive = IVoter(voter).isAlive(IVoter(voter).gauges(plugin));
 
-        bribeCard.protocol = IPlugin(plugin).getProtocol();
         bribeCard.name = IPlugin(plugin).getName();
-        bribeCard.rewardTokens = IBribe(IVoter(voter).bribes(plugin)).getRewardTokens();
+        bribeCard.rewardTokens = IBribe(bribeCard.bribe).getRewardTokens();
 
         uint8[] memory _rewardTokenDecimals = new uint8[](bribeCard.rewardTokens.length);
         for (uint i = 0; i < bribeCard.rewardTokens.length; i++) {
@@ -299,7 +320,7 @@ contract Multicall {
 
         uint[] memory _accountRewardsEarned = new uint[](bribeCard.rewardTokens.length);
         for (uint i = 0; i < bribeCard.rewardTokens.length; i++) {
-            _accountRewardsEarned[i] = (account == address(0) ? 0 : IBribe(IVoter(voter).bribes(plugin)).earned(account, bribeCard.rewardTokens[i]));
+            _accountRewardsEarned[i] = (account == address(0) ? 0 : IBribe(bribeCard.bribe).earned(account, bribeCard.rewardTokens[i]));
         }
         bribeCard.accountRewardsEarned = _accountRewardsEarned;
 
