@@ -22,25 +22,25 @@ abstract contract Plugin is Ownable {
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
-    string private name;
-    address private immutable voter;
-    address private immutable otoken;
-    address private immutable asset;
-    address private gauge;
-    address private bribe;
-    address private assetAuction;
-    address private rewardAuction;
-    address private treasury;
-    uint256 private tvl;
-    bool private initialized;
-
-    address[] private rewardTokens;
+    string public name;
+    address public immutable voter;
+    address public immutable otoken;
+    address public immutable asset;
+    address internal gauge;
+    address internal bribe;
+    address internal assetAuction;
+    address internal rewardAuction;
+    address internal treasury;
+    address[] internal rewardTokens;
+    uint256 internal tvl;
+    bool internal initialized;
 
     /*----------  ERRORS ------------------------------------------------*/
 
     error Plugin__Initialized();
     error Plugin__NotAuthorizedVoter();
     error Plugin__InvalidZeroAddress();
+    error Plugin__TreasuryNotSet();
     error Plugin__AssetAuctionNotSet();
     error Plugin__RewardAuctionNotSet();
     error Plugin__CannotDistributeAsset();
@@ -124,11 +124,14 @@ abstract contract Plugin is Ownable {
 
     /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
 
-    function withdraw() external virtual onlyOwner {
-        tvl = 0;
+    function withdraw() public virtual onlyOwner {
+        if (treasury == address(0)) revert Plugin__TreasuryNotSet();
         uint256 balance = IERC20(asset).balanceOf(address(this));
-        IERC20(asset).safeTransfer(treasury, balance);
-        emit Plugin__Withdraw(balance);
+        if (balance > 0) {
+            tvl = 0;
+            IERC20(asset).safeTransfer(treasury, balance);
+            emit Plugin__Withdraw(balance);
+        }
     }
 
     function setName(string memory _name) external onlyOwner {
@@ -167,18 +170,6 @@ abstract contract Plugin is Ownable {
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
-
-    function getName() public view virtual returns (string memory) {
-        return name;
-    }
-
-    function getVoter() public view returns (address) {
-        return voter;
-    }
-    
-    function getOtoken() public view returns (address) {
-        return otoken;
-    }
 
     function getGauge() public view returns (address) {
         return gauge;
