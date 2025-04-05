@@ -23,8 +23,8 @@ contract Auction {
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     IERC20 public immutable paymentToken;
-    address public immutable plugin;
     address public immutable paymentReceiver;
+    bool public immutable receiverIsPlugin;
     uint256 public immutable epochPeriod;
     uint256 public immutable priceMultiplier;
     uint256 public immutable minInitPrice;
@@ -77,8 +77,8 @@ contract Auction {
 
     /// @dev Initializes the Auction contract with the specified parameters.
     /// @param initPrice The initial price for the first epoch.
+    /// @param receiverIsPlugin_ Whether the payment receiver is a plugin.
     /// @param paymentToken_ The address of the payment token.
-    /// @param plugin_ The address of the plugin.
     /// @param paymentReceiver_ The address of the payment receiver.
     /// @param epochPeriod_ The duration of each epoch period.
     /// @param priceMultiplier_ The multiplier for adjusting the price from one epoch to the next.
@@ -86,8 +86,8 @@ contract Auction {
     /// @notice This constructor performs parameter validation and sets the initial values for the contract.
     constructor(
         uint256 initPrice,
+        bool receiverIsPlugin_,
         address paymentToken_,
-        address plugin_,
         address paymentReceiver_,
         uint256 epochPeriod_,
         uint256 priceMultiplier_,
@@ -105,9 +105,9 @@ contract Auction {
 
         slot0.initPrice = uint192(initPrice);
         slot0.startTime = uint40(block.timestamp);
+        receiverIsPlugin = receiverIsPlugin_;
 
         paymentToken = IERC20(paymentToken_);
-        plugin = plugin_;
         paymentReceiver = paymentReceiver_;
         epochPeriod = epochPeriod_;
         priceMultiplier = priceMultiplier_;
@@ -142,11 +142,11 @@ contract Auction {
         if (paymentAmount > maxPaymentTokenAmount) revert Auction__MaxPaymentAmountExceeded();
 
         if (paymentAmount > 0) {
-            if (plugin != address(0)) {
+            if (receiverIsPlugin) {
                 paymentToken.safeTransferFrom(msg.sender, address(this), paymentAmount);
-                paymentToken.safeApprove(plugin, 0);
-                paymentToken.safeApprove(plugin, paymentAmount);
-                IPlugin(plugin).deposit(paymentAmount);
+                paymentToken.safeApprove(paymentReceiver, 0);
+                paymentToken.safeApprove(paymentReceiver, paymentAmount);
+                IPlugin(paymentReceiver).deposit(paymentAmount);
             } else {
                 paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
             }
@@ -224,14 +224,14 @@ contract AuctionFactory {
 
     function createAuction(
         uint256 initPrice,
+        bool receiverIsPlugin_,
         address paymentToken_,
-        address plugin_,
         address paymentReceiver_,
         uint256 epochPeriod_,
         uint256 priceMultiplier_,
         uint256 minInitPrice_
     ) external returns (address) {
-        Auction auction = new Auction(initPrice, paymentToken_, plugin_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
+        Auction auction = new Auction(initPrice, receiverIsPlugin_, paymentToken_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
         last_auction = address(auction);
         emit AuctionFactory__AuctionCreated(address(auction));
         return address(auction);

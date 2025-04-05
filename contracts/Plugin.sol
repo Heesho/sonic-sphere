@@ -48,7 +48,6 @@ abstract contract Plugin is Ownable {
     /*----------  EVENTS ------------------------------------------------*/
 
     event Plugin__Deposit(uint256 amount);
-    event Plugin__Claim();
     event Plugin__DistributeAssetAuction(address indexed assetAuction, address indexed rewardToken, uint256 amount);
     event Plugin__DistributeRewardAuction(address indexed rewardAuction, address indexed rewardToken, uint256 amount);
     event Plugin__Withdraw(uint256 amount);
@@ -100,9 +99,7 @@ abstract contract Plugin is Ownable {
         emit Plugin__Deposit(amount);
     }
 
-    function claim() public virtual {
-        emit Plugin__Claim();
-    }
+    function claim() public virtual {}
 
     function distribute(address[] memory tokens) public virtual {
         for (uint256 i = 0; i < tokens.length; i++) {
