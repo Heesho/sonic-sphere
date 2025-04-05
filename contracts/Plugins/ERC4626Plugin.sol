@@ -40,7 +40,7 @@ contract ERC4626Plugin is Plugin, ReentrancyGuard {
     ) Plugin(_name, _voter, _asset, _rewardTokens) {}
 
     function deposit(uint256 amount) public override nonReentrant {
-        claim();
+        _claim();
         super.deposit(amount);
 
         uint256 depositReference = IERC4626(asset).convertToAssets(amount);
@@ -48,6 +48,10 @@ contract ERC4626Plugin is Plugin, ReentrancyGuard {
     }
 
     function claim() public override nonReentrant {
+        _claim();
+    }
+
+    function _claim() internal {
         uint256 currentReference = IERC4626(asset).convertToAssets(tvl);
         if (currentReference > amountReference) {
             uint256 withdrawReference = currentReference - amountReference;
@@ -153,5 +157,5 @@ contract ERC4626PluginFactory is Ownable {
         auctionFactory = _auctionFactory;
         emit PluginFactory__SetAuctionFactory(_auctionFactory);
     }
-    
+
 }

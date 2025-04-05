@@ -28,6 +28,10 @@ let VTOKENFactory,
 let minter, voter, fees, rewarder, governance, multicall;
 let TOKEN, VTOKEN, OTOKEN, BASE;
 
+let TEST0, XTEST0, plugin0, gauge0, bribe0;
+let LP0, TEST1, farm0, plugin1, gauge1, bribe1;
+let LP1, TEST2, TEST3, plugin2, gauge2, bribe2;
+
 describe("test6", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
@@ -40,10 +44,42 @@ describe("test6", function () {
     const ERC20MockArtifact = await ethers.getContractFactory("ERC20Mock");
     BASE = await ERC20MockArtifact.deploy("BASE", "BASE");
     console.log("- BASE Initialized");
-    LP0 = await ERC20MockArtifact.deploy("LP0", "LP0");
+    TEST0 = await ERC20MockArtifact.deploy("TEST0", "TEST0");
+    console.log("- TEST0 Initialized");
+    TEST1 = await ERC20MockArtifact.deploy("TEST1", "TEST1");
+    console.log("- TEST1 Initialized");
+    TEST2 = await ERC20MockArtifact.deploy("TEST2", "TEST2");
+    console.log("- TEST2 Initialized");
+    TEST3 = await ERC20MockArtifact.deploy("TEST3", "TEST3");
+    console.log("- TEST3 Initialized");
+
+    const ERC4626MockArtifact = await ethers.getContractFactory("ERC4626Mock");
+    XTEST0 = await ERC4626MockArtifact.deploy(
+      TEST0.address,
+      "XTEST0",
+      "XTEST0"
+    );
+    console.log("- XTEST0 Initialized");
+
+    const LPMockArtifact = await ethers.getContractFactory("LPMock");
+    LP0 = await LPMockArtifact.deploy(
+      "LP0",
+      "LP0",
+      TEST2.address,
+      TEST3.address
+    );
     console.log("- LP0 Initialized");
-    LP1 = await ERC20MockArtifact.deploy("LP1", "LP1");
+    LP1 = await LPMockArtifact.deploy(
+      "LP1",
+      "LP1",
+      TEST2.address,
+      TEST3.address
+    );
     console.log("- LP1 Initialized");
+
+    const FarmMockArtifact = await ethers.getContractFactory("FarmMock");
+    farm0 = await FarmMockArtifact.deploy(LP0.address, TEST1.address);
+    console.log("- farm0 Initialized");
 
     // initialize OTOKENFactory
     const OTOKENFactoryArtifact = await ethers.getContractFactory(
