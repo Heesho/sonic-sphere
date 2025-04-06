@@ -404,6 +404,39 @@ describe.only("erc4626PluginTest", function () {
     console.log();
     */
   });
+
+  it("Test plugin0 withdraw access control inheritance", async function () {
+    console.log("******************************************************");
+    console.log("Testing plugin0 withdraw access control inheritance");
+    console.log();
+
+    // First deposit some tokens to have something to withdraw
+    const depositAmount = oneHundred;
+    await TEST0.mint(user1.address, depositAmount);
+    await TEST0.connect(user1).approve(XTEST0.address, depositAmount);
+    await XTEST0.connect(user1).deposit(depositAmount, user1.address);
+    const shares = await XTEST0.balanceOf(user1.address);
+    await XTEST0.connect(user1).approve(plugin0.address, shares);
+    await plugin0.connect(user1).deposit(shares);
+
+    // Test that non-owner cannot withdraw
+    console.log("Testing withdraw from non-owner account...");
+    await expect(plugin0.connect(user0).withdraw()).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+    await expect(plugin0.connect(user1).withdraw()).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    // Test that owner (multisig) can withdraw
+    console.log("Testing withdraw from owner account...");
+    await plugin0.connect(multisig).withdraw();
+    expect(await plugin0.getTvl()).to.equal(0);
+    expect(await plugin0.amountReference()).to.equal(0);
+
+    console.log("All withdraw access control tests passed!");
+    console.log();
+  });
   /*
   it("Test plugin0 security and limits", async function () {
     console.log("******************************************************");
