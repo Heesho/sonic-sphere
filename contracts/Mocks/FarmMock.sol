@@ -37,8 +37,9 @@ contract FarmMock is ReentrancyGuard {
     }
 
     function getReward(address account) external nonReentrant {
-        require(_balanceOf[account] > 0, "Nothing staked");
-        rewardToken.safeTransfer(account, REWARD_AMOUNT);
+        if (_balanceOf[account] > 0) {
+            rewardToken.safeTransfer(account, REWARD_AMOUNT);
+        }
     }
 
     function balanceOf(address account) external view returns (uint256) {

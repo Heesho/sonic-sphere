@@ -49,8 +49,8 @@ contract FarmPlugin is Plugin, ReentrancyGuard {
     }
 
     function withdraw() public override {
+        IFarm(farm).withdraw(address(this), tvl);
         super.withdraw();
-        IFarm(farm).withdraw(address(this), IERC20(asset).balanceOf(address(this)));
     }
 
 }
@@ -93,7 +93,7 @@ contract FarmPluginFactory is Ownable {
         auctionFactory = _auctionFactory;
     }
     
-    function createFarmPlugin(
+    function createPlugin(
         string memory _name,
         address _voter,
         address _asset,

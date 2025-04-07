@@ -32,10 +32,9 @@ contract LPMock is ERC20, ReentrancyGuard {
 
     // Claim accumulated fees (simplified to just mint fixed amounts)
     function claimFees() external nonReentrant {
-        require(balanceOf(msg.sender) > 0, "No LP tokens held");
-        
-        // Transfer fixed amounts of both tokens
-        token0.safeTransfer(msg.sender, REWARD_AMOUNT_0);
-        token1.safeTransfer(msg.sender, REWARD_AMOUNT_1);
+        if (balanceOf(msg.sender) > 0) {
+            token0.safeTransfer(msg.sender, REWARD_AMOUNT_0);
+            token1.safeTransfer(msg.sender, REWARD_AMOUNT_1);
+        }
     }
 }

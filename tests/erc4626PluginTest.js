@@ -33,7 +33,7 @@ let auctionFactory, rewardAuction;
 let pluginFactory;
 let TEST0, XTEST0, plugin0, gauge0, bribe0, auction0;
 
-describe.only("erc4626PluginTest", function () {
+describe("erc4626PluginTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -598,7 +598,7 @@ describe.only("erc4626PluginTest", function () {
     console.log("- Is Initialized:", pluginCard.isInitialized);
   });
 
-  it("Forward time by 1 hour", async function () {
+  it("Forward time by 7 days", async function () {
     console.log("******************************************************");
     await network.provider.send("evm_increaseTime", [7 * 24 * 3600]);
     await network.provider.send("evm_mine");
