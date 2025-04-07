@@ -237,13 +237,7 @@ describe("test2", function () {
   it("User0 Buys TOKEN with 10 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, ten);
-    await TOKEN.connect(user0).buy(
-      ten,
-      1,
-      1892282187,
-      user0.address,
-      AddressZero
-    );
+    await TOKEN.connect(user0).buy(ten, 1, 1892282187, user0.address);
   });
 
   it("Quote Sell In", async function () {
@@ -276,8 +270,7 @@ describe("test2", function () {
       await TOKEN.getMaxSell(),
       1,
       1892282187,
-      user0.address,
-      AddressZero
+      user0.address
     );
   });
 
@@ -297,8 +290,7 @@ describe("test2", function () {
       res.output,
       res.autoMinOutput,
       1892282187,
-      user0.address,
-      AddressZero
+      user0.address
     );
   });
 
@@ -318,8 +310,7 @@ describe("test2", function () {
       res.output,
       res.autoMinOutput,
       1892282187,
-      user0.address,
-      AddressZero
+      user0.address
     );
   });
 });

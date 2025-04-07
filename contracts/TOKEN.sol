@@ -65,9 +65,8 @@ interface ITOKENFeesFactory {
  * of 1 BASE/TOKEN (floor price) to an upper limit of infinity BASE/TOKEN.
  * 
  * The contract is designed to interact with external contracts including: OTOKEN, VTOKEN, and a FEES contract. 
- * It is also equipped to levy protocol and UI hosting provider fees. The TOKEN's initial supply is minted to the 
- * bonding curve balanced by an equal amount of virtual BASE. For the bonding curve to operate correctly, BASE must 
- * be an 18 decimal ERC20 token.
+ * The TOKEN's initial supply is minted to the bonding curve balanced by an equal amount of virtual BASE. 
+ * For the bonding curve to operate correctly, BASE must be an 18 decimal ERC20 token.
  */
 contract TOKEN is ERC20, ReentrancyGuard {
     using FixedPointMathLib for uint256;
@@ -81,7 +80,6 @@ contract TOKEN is ERC20, ReentrancyGuard {
 
     uint256 public constant SWAP_FEE = 30;      // Swap fee: buy, sell
     uint256 public constant BORROW_FEE = 250;      // borrow fee
-    uint256 public constant PROVIDER_FEE = 2000;    // Fee for the UI hosting provider
 
     /*===========================  END SETTINGS  ========================*/
     /*===================================================================*/
@@ -189,10 +187,9 @@ contract TOKEN is ERC20, ReentrancyGuard {
      * @param minToken Minimum amount of TOKEN to receive, reverts when outTOKEN < minToken
      * @param expireTimestamp Expiration timestamp of the swap, reverts when block.timestamp > expireTimestamp
      * @param toAccount Account address to receive TOKEN
-     * @param provider Account address (UI provider) to receive provider fee, address(0) does not take a fee
      * @return bool true=success, otherwise false
      */
-    function buy(uint256 amountBase, uint256 minToken, uint256 expireTimestamp, address toAccount, address provider) 
+    function buy(uint256 amountBase, uint256 minToken, uint256 expireTimestamp, address toAccount) 
         external
         nonReentrant
         nonZeroInput(amountBase)
@@ -211,13 +208,7 @@ contract TOKEN is ERC20, ReentrancyGuard {
 
         emit TOKEN__Buy(msg.sender, toAccount, amountBase);
 
-        if (provider != address(0)) {
-            uint256 providerFee = feeBASE * PROVIDER_FEE / DIVISOR;
-            BASE.safeTransferFrom(msg.sender, provider, providerFee);
-            BASE.safeTransferFrom(msg.sender, FEES, feeBASE - providerFee);
-        } else {
-            BASE.safeTransferFrom(msg.sender, FEES, feeBASE);
-        }
+        BASE.safeTransferFrom(msg.sender, FEES, feeBASE);
         IERC20(BASE).safeTransferFrom(msg.sender, address(this), amountBase - feeBASE);
         _mint(toAccount, outTOKEN);
         return true;
@@ -229,10 +220,9 @@ contract TOKEN is ERC20, ReentrancyGuard {
      * @param minBase Minimum amount of BASE to receive, reverts when outBase < minBase
      * @param expireTimestamp Expiration timestamp of the swap, reverts when block.timestamp > expireTimestamp
      * @param toAccount Account address to receive BASE
-     * @param provider Account address (UI provider) to receive provider fee, address(0) does not take a fee
      * @return bool true=success, otherwise false
      */
-    function sell(uint256 amountToken, uint256 minBase, uint256 expireTimestamp, address toAccount, address provider) 
+    function sell(uint256 amountToken, uint256 minBase, uint256 expireTimestamp, address toAccount)
         external
         nonReentrant
         nonZeroInput(amountToken)
@@ -252,13 +242,7 @@ contract TOKEN is ERC20, ReentrancyGuard {
 
         emit TOKEN__Sell(msg.sender, toAccount, amountToken);
 
-        if (provider != address(0)) {
-            uint256 providerFee = feeTOKEN * PROVIDER_FEE / DIVISOR;
-            IERC20(address(this)).transferFrom(msg.sender, provider, providerFee);
-            IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN - providerFee);
-        } else {
-            IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN);
-        }
+        IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN);
         _burn(msg.sender, amountToken - feeTOKEN); 
         BASE.safeTransfer(toAccount, outBASE);
         return true;

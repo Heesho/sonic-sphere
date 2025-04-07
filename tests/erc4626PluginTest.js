@@ -33,7 +33,7 @@ let auctionFactory, rewardAuction;
 let pluginFactory;
 let TEST0, XTEST0, plugin0, gauge0, bribe0;
 
-describe.only("erc4626PluginTest", function () {
+describe("erc4626PluginTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -325,18 +325,19 @@ describe.only("erc4626PluginTest", function () {
     console.log("Testing plugin0 with multiple users and initialization");
     console.log();
 
-    // First make sure plugin is initialized
-    if (!(await plugin0.getInitialized())) {
-      // Add plugin to voter which will create and set gauge and bribe
-      await voter.connect(owner).addPlugin(plugin0.address);
+    // Add plugin to voter which will create and set gauge and bribe
+    await voter.connect(owner).addPlugin(plugin0.address);
 
-      expect(await plugin0.getGauge()).to.not.equal(AddressZero);
-      expect(await plugin0.getBribe()).to.not.equal(AddressZero);
+    expect(await plugin0.getGauge()).to.not.equal(AddressZero);
+    expect(await plugin0.getBribe()).to.not.equal(AddressZero);
 
-      // Initialize plugin
-      await plugin0.initialize();
-      expect(await plugin0.getInitialized()).to.equal(true);
-    }
+    gauge0 = await ethers.getContractAt("Gauge", await plugin0.getGauge());
+
+    bribe0 = await ethers.getContractAt("Bribe", await plugin0.getBribe());
+
+    // Initialize plugin
+    await plugin0.initialize();
+    expect(await plugin0.getInitialized()).to.equal(true);
 
     // Setup initial tokens for users
     const depositAmount = oneHundred;
@@ -360,22 +361,19 @@ describe.only("erc4626PluginTest", function () {
     const user1Shares = await XTEST0.balanceOf(user1.address);
     await XTEST0.connect(user2).deposit(depositAmount, user2.address);
     const user2Shares = await XTEST0.balanceOf(user2.address);
-    /*
+
     // Approve plugin for XTEST0 shares
     await XTEST0.connect(user1).approve(plugin0.address, user1Shares);
     await XTEST0.connect(user2).approve(plugin0.address, user2Shares);
 
     // Test 1: Multiple users depositing
     console.log("Testing multiple user deposits...");
-    const user1DepositShares = await XTEST0.convertToShares(depositAmount);
-    await plugin0.connect(user1).deposit(user1DepositShares);
-    const user2DepositShares = await XTEST0.convertToShares(depositAmount);
-    await plugin0.connect(user2).deposit(user2DepositShares);
+    await plugin0.connect(user1).deposit(user1Shares);
+    await plugin0.connect(user2).deposit(user2Shares);
 
     // Check TVL in terms of underlying asset value
     const totalShares = await plugin0.getTvl();
-    const expectedUnderlyingValue = await XTEST0.convertToAssets(totalShares);
-    expect(expectedUnderlyingValue).to.equal(depositAmount.mul(2));
+    expect(totalShares).to.equal(user1Shares.add(user2Shares));
 
     // Test 2: Simulate yield generation
     console.log("Testing yield generation...");
@@ -402,7 +400,6 @@ describe.only("erc4626PluginTest", function () {
 
     console.log("All additional plugin0 tests passed!");
     console.log();
-    */
   });
 
   it("Test plugin0 withdraw access control inheritance", async function () {
@@ -437,7 +434,7 @@ describe.only("erc4626PluginTest", function () {
     console.log("All withdraw access control tests passed!");
     console.log();
   });
-  /*
+
   it("Test plugin0 security and limits", async function () {
     console.log("******************************************************");
     console.log("Testing plugin0 security and limits");
@@ -453,10 +450,7 @@ describe.only("erc4626PluginTest", function () {
 
     // Test 3: Only voter can set gauge
     console.log("Testing gauge setting restrictions...");
-    await gaugeFactory.createGauge(plugin0.address, false); // Add the required second parameter
-    const newGaugeAddress = await gaugeFactory.last_gauge();
-    await expect(plugin0.connect(user0).setGauge(newGaugeAddress)).to.be
-      .reverted;
+    await expect(plugin0.connect(user0).setGauge(TEST0.address)).to.be.reverted;
 
     // Test 4: Verify core parameters
     console.log("Testing core parameters...");
@@ -474,5 +468,122 @@ describe.only("erc4626PluginTest", function () {
     console.log("All security and limit tests passed!");
     console.log();
   });
-  */
+
+  it("Clear plugin0 tvl for asset auction testing", async function () {
+    console.log("******************************************************");
+    console.log("Clear plugin0 tvl for asset auction testing");
+    console.log();
+
+    await plugin0.connect(multisig).withdraw();
+    expect(await plugin0.getTvl()).to.equal(0);
+  });
+
+  it("Test plugin0 parameters via multicall", async function () {
+    console.log("******************************************************");
+    console.log("Testing plugin0 parameters via multicall");
+    console.log();
+
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+
+    console.log("Plugin Details:");
+    console.log("- Name:", pluginCard.name);
+    console.log("- Asset:", pluginCard.asset);
+    console.log("- Gauge:", pluginCard.gauge);
+    console.log("- Bribe:", pluginCard.bribe);
+    console.log("- Asset Auction:", pluginCard.assetAuction);
+    console.log("- Reward Auction:", pluginCard.rewardAuction);
+    console.log("- Treasury:", pluginCard.treasury);
+    console.log("- TVL:", ethers.utils.formatUnits(pluginCard.tvl, 18));
+    console.log(
+      "- Voting Weight:",
+      ethers.utils.formatUnits(pluginCard.votingWeight, 18),
+      "%"
+    );
+
+    console.log("\nAuction Parameters:");
+    console.log(
+      "- Epoch Period:",
+      pluginCard.auctionEpochPerdiod.toString(),
+      "seconds"
+    );
+    console.log(
+      "- Price Multiplier:",
+      ethers.utils.formatUnits(pluginCard.auctionPriceMultiplier, 18)
+    );
+    console.log(
+      "- Min Init Price:",
+      ethers.utils.formatUnits(pluginCard.auctionMinInitPrice, 18)
+    );
+    console.log(
+      "- Current Init Price:",
+      ethers.utils.formatUnits(pluginCard.auctionInitPrice, 18)
+    );
+    console.log(
+      "- Start Time:",
+      new Date(pluginCard.auctionStartTime * 1000).toLocaleString()
+    );
+    console.log(
+      "- Current Price:",
+      ethers.utils.formatUnits(pluginCard.auctionPrice, 18)
+    );
+    console.log(
+      "- Offered OTOKEN:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+
+    console.log("\nStatus:");
+    console.log("- Is Alive:", pluginCard.isAlive);
+    console.log("- Is Initialized:", pluginCard.isInitialized);
+  });
+
+  it("Setup emissions for plugin0", async function () {
+    console.log("******************************************************");
+    console.log("Setting up emissions for plugin0");
+    console.log();
+
+    // First get some BASE to purchase TOKEN
+    const baseAmount = oneThousand;
+    await BASE.mint(user0.address, baseAmount);
+    await BASE.connect(user0).approve(TOKEN.address, baseAmount);
+
+    // Purchase TOKEN
+    console.log("Purchasing TOKEN...");
+    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
+    const tokenBalance = await TOKEN.balanceOf(user0.address);
+    console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
+
+    // Stake TOKEN for vTOKEN
+    console.log("\nStaking TOKEN for vTOKEN...");
+    await TOKEN.connect(user0).approve(VTOKEN.address, tokenBalance);
+    await VTOKEN.connect(user0).deposit(tokenBalance);
+    const vTokenBalance = await VTOKEN.balanceOf(user0.address);
+    console.log(
+      "vTOKEN received:",
+      ethers.utils.formatUnits(vTokenBalance, 18)
+    );
+
+    // Vote for plugin0
+    console.log("\nVoting for plugin0...");
+    await voter.connect(user0).vote([plugin0.address], [vTokenBalance]);
+
+    // Verify the vote
+    const weight = await voter.weights(plugin0.address);
+    console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
+
+    // Get updated plugin data
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    console.log("\nUpdated Plugin Details:");
+    console.log(
+      "- Voting Weight:",
+      ethers.utils.formatUnits(pluginCard.votingWeight, 18),
+      "%"
+    );
+    console.log(
+      "- Offered OTOKEN:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+
+    expect(weight).to.equal(vTokenBalance);
+    console.log("\nEmissions setup complete!");
+  });
 });

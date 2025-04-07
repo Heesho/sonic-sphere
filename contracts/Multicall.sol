@@ -56,14 +56,14 @@ interface IBribe {
 }
 
 interface IPlugin {
-    function getName() external view returns (string memory);
-    function getAsset() external view returns (address);
+    function name() external view returns (string memory);
+    function asset() external view returns (address);
     function getRewardAuction() external view returns (address);
     function getAssetAuction() external view returns (address);
     function getTreasury() external view returns (address);
     function getRewardTokens() external view returns (address[] memory);
-    function isInitialized() external view returns (bool);
-    function tvl() external view returns (uint256);
+    function getInitialized() external view returns (bool);
+    function getTvl() external view returns (uint256);
 }
 
 interface IAuction {
@@ -268,9 +268,9 @@ contract Multicall {
     }
 
     function pluginCardData(address plugin) public view returns (PluginCard memory pluginCard) {
-        pluginCard.name = IPlugin(plugin).getName();
+        pluginCard.name = IPlugin(plugin).name();
         pluginCard.plugin = plugin;
-        pluginCard.asset = IPlugin(plugin).getAsset();
+        pluginCard.asset = IPlugin(plugin).asset();
         pluginCard.gauge = IVoter(voter).gauges(plugin);
         pluginCard.bribe = IVoter(voter).bribes(plugin);
         pluginCard.assetAuction = IPlugin(plugin).getAssetAuction();
@@ -279,9 +279,9 @@ contract Multicall {
         pluginCard.rewardTokens = IPlugin(plugin).getRewardTokens();
         
         pluginCard.isAlive = IVoter(voter).isAlive(pluginCard.gauge);
-        pluginCard.isInitialized = IPlugin(plugin).isInitialized();
-
-        pluginCard.tvl = IPlugin(plugin).tvl();
+        pluginCard.isInitialized = IPlugin(plugin).getInitialized();
+        pluginCard.assetDecimals = IERC20Metadata(pluginCard.asset).decimals();
+        pluginCard.tvl = IPlugin(plugin).getTvl();
         pluginCard.votingWeight = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
 
         pluginCard.auctionEpochPerdiod = IAuction(pluginCard.assetAuction).epochPeriod();
@@ -303,7 +303,7 @@ contract Multicall {
         bribeCard.bribe = IVoter(voter).bribes(plugin);
         bribeCard.isAlive = IVoter(voter).isAlive(IVoter(voter).gauges(plugin));
 
-        bribeCard.name = IPlugin(plugin).getName();
+        bribeCard.name = IPlugin(plugin).name();
         bribeCard.rewardTokens = IBribe(bribeCard.bribe).getRewardTokens();
 
         uint8[] memory _rewardTokenDecimals = new uint8[](bribeCard.rewardTokens.length);
