@@ -199,9 +199,9 @@ describe("test5", function () {
 
   it("Mint test tokens to each user", async function () {
     console.log("******************************************************");
-    await BASE.mint(user0.address, 1000);
-    await BASE.mint(user1.address, 1000);
-    await BASE.mint(user2.address, 1000);
+    await BASE.mint(user0.address, oneThousand);
+    await BASE.mint(user1.address, oneThousand);
+    await BASE.mint(user2.address, oneThousand);
   });
 
   it("User0 Buys TOKEN with 10 BASE", async function () {
