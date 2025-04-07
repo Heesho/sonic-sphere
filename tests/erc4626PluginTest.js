@@ -25,15 +25,15 @@ let VTOKENFactory,
   rewarderFactory,
   gaugeFactory,
   bribeFactory;
-let minter, voter, fees, rewarder, governance, multicall;
+let minter, voter, fees, rewarder, governance, multicall, controller;
 let TOKEN, VTOKEN, OTOKEN, BASE;
 
 let auctionFactory, rewardAuction;
 
 let pluginFactory;
-let TEST0, XTEST0, plugin0, gauge0, bribe0;
+let TEST0, XTEST0, plugin0, gauge0, bribe0, auction0;
 
-describe("erc4626PluginTest", function () {
+describe.only("erc4626PluginTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -196,6 +196,10 @@ describe("erc4626PluginTest", function () {
     );
     console.log("- Multicall Initialized");
 
+    const controllerArtifact = await ethers.getContractFactory("Controller");
+    controller = await controllerArtifact.deploy(voter.address, fees.address);
+    console.log("- Controller Initialized");
+
     // System set-up
     await gaugeFactory.setVoter(voter.address);
     await bribeFactory.setVoter(voter.address);
@@ -265,9 +269,69 @@ describe("erc4626PluginTest", function () {
 
   it("Mint test tokens to each user", async function () {
     console.log("******************************************************");
-    await BASE.mint(user0.address, 1000);
-    await BASE.mint(user1.address, 1000);
-    await BASE.mint(user2.address, 1000);
+    await BASE.mint(user0.address, oneThousand);
+    await BASE.mint(user1.address, oneThousand);
+    await BASE.mint(user2.address, oneThousand);
+  });
+
+  it("Setup emissions for plugin0", async function () {
+    console.log("******************************************************");
+    console.log("Setting up emissions for plugin0");
+    console.log();
+
+    // Add plugin to voter which will create and set gauge and bribe
+    await voter.connect(owner).addPlugin(plugin0.address);
+
+    // First get some BASE to purchase TOKEN
+    const baseAmount = oneThousand;
+    await BASE.mint(user0.address, baseAmount);
+    await BASE.connect(user0).approve(TOKEN.address, baseAmount);
+
+    // Purchase TOKEN
+    console.log("Purchasing TOKEN...");
+    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
+    const tokenBalance = await TOKEN.balanceOf(user0.address);
+    console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
+
+    // Stake TOKEN for vTOKEN
+    console.log("\nStaking TOKEN for vTOKEN...");
+    await TOKEN.connect(user0).approve(VTOKEN.address, tokenBalance);
+    await VTOKEN.connect(user0).deposit(tokenBalance);
+    const vTokenBalance = await VTOKEN.balanceOf(user0.address);
+    console.log(
+      "vTOKEN received:",
+      ethers.utils.formatUnits(vTokenBalance, 18)
+    );
+
+    // Vote for plugin0
+    console.log("\nVoting for plugin0...");
+    await voter.connect(user0).vote([plugin0.address], [vTokenBalance]);
+
+    // Verify the vote
+    const weight = await voter.weights(plugin0.address);
+    console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
+
+    // Get updated plugin data
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    console.log("\nUpdated Plugin Details:");
+    console.log(
+      "- Voting Weight:",
+      ethers.utils.formatUnits(pluginCard.votingWeight, 18),
+      "%"
+    );
+    console.log(
+      "- Offered OTOKEN:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+
+    expect(weight).to.equal(vTokenBalance);
+    console.log("\nEmissions setup complete!");
+  });
+
+  it("Owner calls distribute", async function () {
+    console.log("******************************************************");
+    await voter.connect(owner).distro();
+    await fees.distribute();
   });
 
   it("Test plugin0", async function () {
@@ -324,9 +388,6 @@ describe("erc4626PluginTest", function () {
     console.log("******************************************************");
     console.log("Testing plugin0 with multiple users and initialization");
     console.log();
-
-    // Add plugin to voter which will create and set gauge and bribe
-    await voter.connect(owner).addPlugin(plugin0.address);
 
     expect(await plugin0.getGauge()).to.not.equal(AddressZero);
     expect(await plugin0.getBribe()).to.not.equal(AddressZero);
@@ -502,8 +563,8 @@ describe("erc4626PluginTest", function () {
 
     console.log("\nAuction Parameters:");
     console.log(
-      "- Epoch Period:",
-      pluginCard.auctionEpochPerdiod.toString(),
+      "- Epoch Duration:",
+      pluginCard.auctionEpochDuration.toString(),
       "seconds"
     );
     console.log(
@@ -514,6 +575,7 @@ describe("erc4626PluginTest", function () {
       "- Min Init Price:",
       ethers.utils.formatUnits(pluginCard.auctionMinInitPrice, 18)
     );
+    console.log("- Current Epoch:", pluginCard.auctionEpoch.toString());
     console.log(
       "- Current Init Price:",
       ethers.utils.formatUnits(pluginCard.auctionInitPrice, 18)
@@ -536,54 +598,382 @@ describe("erc4626PluginTest", function () {
     console.log("- Is Initialized:", pluginCard.isInitialized);
   });
 
-  it("Setup emissions for plugin0", async function () {
+  it("Forward time by 1 hour", async function () {
     console.log("******************************************************");
-    console.log("Setting up emissions for plugin0");
+    await network.provider.send("evm_increaseTime", [7 * 24 * 3600]);
+    await network.provider.send("evm_mine");
+  });
+
+  it("Owner calls distribute", async function () {
+    console.log("******************************************************");
+    await voter.connect(owner).distro();
+    await fees.distribute();
+  });
+
+  it("Test plugin0 parameters via multicall", async function () {
+    console.log("******************************************************");
+    console.log("Testing plugin0 parameters via multicall");
     console.log();
 
-    // First get some BASE to purchase TOKEN
-    const baseAmount = oneThousand;
-    await BASE.mint(user0.address, baseAmount);
-    await BASE.connect(user0).approve(TOKEN.address, baseAmount);
-
-    // Purchase TOKEN
-    console.log("Purchasing TOKEN...");
-    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
-    const tokenBalance = await TOKEN.balanceOf(user0.address);
-    console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
-
-    // Stake TOKEN for vTOKEN
-    console.log("\nStaking TOKEN for vTOKEN...");
-    await TOKEN.connect(user0).approve(VTOKEN.address, tokenBalance);
-    await VTOKEN.connect(user0).deposit(tokenBalance);
-    const vTokenBalance = await VTOKEN.balanceOf(user0.address);
-    console.log(
-      "vTOKEN received:",
-      ethers.utils.formatUnits(vTokenBalance, 18)
-    );
-
-    // Vote for plugin0
-    console.log("\nVoting for plugin0...");
-    await voter.connect(user0).vote([plugin0.address], [vTokenBalance]);
-
-    // Verify the vote
-    const weight = await voter.weights(plugin0.address);
-    console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
-
-    // Get updated plugin data
     const pluginCard = await multicall.pluginCardData(plugin0.address);
-    console.log("\nUpdated Plugin Details:");
+
+    console.log("Plugin Details:");
+    console.log("- Name:", pluginCard.name);
+    console.log("- Asset:", pluginCard.asset);
+    console.log("- Gauge:", pluginCard.gauge);
+    console.log("- Bribe:", pluginCard.bribe);
+    console.log("- Asset Auction:", pluginCard.assetAuction);
+    console.log("- Reward Auction:", pluginCard.rewardAuction);
+    console.log("- Treasury:", pluginCard.treasury);
+    console.log("- TVL:", ethers.utils.formatUnits(pluginCard.tvl, 18));
     console.log(
       "- Voting Weight:",
       ethers.utils.formatUnits(pluginCard.votingWeight, 18),
       "%"
+    );
+
+    console.log("\nAuction Parameters:");
+    console.log(
+      "- Epoch Duration:",
+      pluginCard.auctionEpochDuration.toString(),
+      "seconds"
+    );
+    console.log(
+      "- Price Multiplier:",
+      ethers.utils.formatUnits(pluginCard.auctionPriceMultiplier, 18)
+    );
+    console.log(
+      "- Min Init Price:",
+      ethers.utils.formatUnits(pluginCard.auctionMinInitPrice, 18)
+    );
+    console.log("- Current Epoch:", pluginCard.auctionEpoch.toString());
+    console.log(
+      "- Current Init Price:",
+      ethers.utils.formatUnits(pluginCard.auctionInitPrice, 18)
+    );
+    console.log(
+      "- Start Time:",
+      new Date(pluginCard.auctionStartTime * 1000).toLocaleString()
+    );
+    console.log(
+      "- Current Price:",
+      ethers.utils.formatUnits(pluginCard.auctionPrice, 18)
     );
     console.log(
       "- Offered OTOKEN:",
       ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
     );
 
-    expect(weight).to.equal(vTokenBalance);
-    console.log("\nEmissions setup complete!");
+    console.log("\nStatus:");
+    console.log("- Is Alive:", pluginCard.isAlive);
+    console.log("- Is Initialized:", pluginCard.isInitialized);
+  });
+
+  it("Buy from plugin0's asset auction", async function () {
+    console.log("******************************************************");
+    console.log("Testing buying from plugin0's asset auction");
+    console.log();
+
+    // First claim OTOKEN from gauge to plugin
+    console.log("Claiming OTOKEN from gauge to plugin...");
+    await gauge0.getReward(plugin0.address);
+
+    // Get auction details before purchase
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    auction0 = await ethers.getContractAt("Auction", pluginCard.assetAuction);
+    const currentPrice = await auction0.getPrice();
+    const currentEpoch = (await auction0.getSlot0()).epochId;
+
+    console.log("Pre-Purchase Auction State:");
+    console.log("- Current Price:", ethers.utils.formatUnits(currentPrice, 18));
+    console.log(
+      "- OTOKEN Available:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+
+    // Get enough TEST0 to cover auction price
+    await TEST0.mint(user1.address, currentPrice.mul(2)); // Extra for buffer
+    await TEST0.connect(user1).approve(XTEST0.address, currentPrice.mul(2));
+    await XTEST0.connect(user1).deposit(currentPrice.mul(2), user1.address);
+
+    // Approve auction to spend XTEST0
+    await XTEST0.connect(user1).approve(auction0.address, currentPrice);
+
+    // Buy from auction with proper parameters
+    console.log("\nPurchasing from auction...");
+    const deadline = 1792282187;
+    await plugin0.connect(user1).distribute([OTOKEN.address]);
+    await auction0.connect(user1).buy(
+      [OTOKEN.address], // assets to buy
+      user1.address, // assets receiver
+      currentEpoch, // current epoch id
+      deadline, // deadline
+      currentPrice // max payment amount
+    );
+
+    // Get post-purchase state
+    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    console.log("\nPost-Purchase Auction State:");
+    console.log(
+      "- Current Price:",
+      ethers.utils.formatUnits(postPluginCard.auctionPrice, 18)
+    );
+    console.log(
+      "- OTOKEN Remaining:",
+      ethers.utils.formatUnits(postPluginCard.offeredOTOKEN, 18)
+    );
+
+    // Verify user received OTOKEN
+    const userOtokenBalance = await OTOKEN.balanceOf(user1.address);
+    console.log(
+      "\nUser's OTOKEN balance:",
+      ethers.utils.formatUnits(userOtokenBalance, 18)
+    );
+
+    expect(postPluginCard.offeredOTOKEN).to.be.lt(pluginCard.offeredOTOKEN);
+    expect(userOtokenBalance).to.be.gt(0);
+
+    console.log("\nAuction purchase complete!");
+  });
+
+  it("Forward time and buy from auction again", async function () {
+    console.log("******************************************************");
+    console.log("Testing second auction purchase after time delay");
+    console.log();
+
+    // Forward time by 1 hours to see price change
+    await network.provider.send("evm_increaseTime", [3600]);
+    await network.provider.send("evm_mine");
+
+    // Claim new OTOKEN rewards from gauge to plugin
+    console.log("Claiming OTOKEN from gauge to plugin...");
+    await plugin0.connect(user2).distribute([OTOKEN.address]);
+
+    // Get auction details before purchase
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const currentPrice = await auction0.getPrice();
+    const currentEpoch = (await auction0.getSlot0()).epochId;
+
+    console.log("Pre-Purchase Auction State:");
+    console.log("- Current Price:", ethers.utils.formatUnits(currentPrice, 18));
+    console.log(
+      "- OTOKEN Available:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+
+    console.log(
+      "User2 TEST0 Balance: ",
+      divDec(await TEST0.balanceOf(user2.address))
+    );
+    // Get enough TEST0 to cover auction price for user2 this time
+    await TEST0.mint(user2.address, currentPrice.mul(3)); // Extra for buffer
+    console.log(
+      "User2 TEST0 Balance: ",
+      divDec(await TEST0.balanceOf(user2.address))
+    );
+    await TEST0.connect(user2).approve(XTEST0.address, currentPrice.mul(3));
+    await XTEST0.connect(user2).deposit(currentPrice.mul(3), user2.address);
+
+    // Approve auction to spend XTEST0
+    console.log(
+      "User2 XTEST0 Balance: ",
+      divDec(await XTEST0.balanceOf(user2.address))
+    );
+    await XTEST0.connect(user2).approve(auction0.address, currentPrice);
+
+    // Buy from auction with proper parameters
+    console.log("\nPurchasing from auction...");
+    const deadline = 1792282187; // 1 hour from now
+    await plugin0.connect(user2).distribute([OTOKEN.address]);
+    await auction0
+      .connect(user2)
+      .buy(
+        [OTOKEN.address],
+        user2.address,
+        currentEpoch,
+        deadline,
+        currentPrice
+      );
+
+    // Get post-purchase state
+    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    console.log("\nPost-Purchase Auction State:");
+    console.log(
+      "- Current Price:",
+      ethers.utils.formatUnits(postPluginCard.auctionPrice, 18)
+    );
+    console.log(
+      "- OTOKEN Remaining:",
+      ethers.utils.formatUnits(postPluginCard.offeredOTOKEN, 18)
+    );
+
+    // Verify user received OTOKEN
+    const userOtokenBalance = await OTOKEN.balanceOf(user2.address);
+    console.log(
+      "\nUser2's OTOKEN balance:",
+      ethers.utils.formatUnits(userOtokenBalance, 18)
+    );
+
+    expect(postPluginCard.offeredOTOKEN).to.be.lt(pluginCard.offeredOTOKEN);
+    expect(userOtokenBalance).to.be.gt(0);
+
+    console.log("\nSecond auction purchase complete!");
+  });
+
+  it("Add more yield and distribute via Controller", async function () {
+    console.log("******************************************************");
+    console.log("Testing yield and distribution via Controller");
+    console.log();
+
+    // First check current state
+    const beforeYieldTVL = await plugin0.getTvl();
+    const beforeYieldRef = await plugin0.amountReference();
+    console.log("Initial State:");
+    console.log("- TVL:", ethers.utils.formatUnits(beforeYieldTVL, 18));
+    console.log(
+      "- Reference Amount:",
+      ethers.utils.formatUnits(beforeYieldRef, 18)
+    );
+    console.log(
+      "- Plugin XTEST0 Balance:",
+      ethers.utils.formatUnits(await XTEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- Plugin TEST0 Balance:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- RewardAuction TEST0 Balance:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- Asset Auction OTOKEN Balance:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(auction0.address), 18)
+    );
+
+    // Add yield by minting more TEST0 to XTEST0
+    console.log("\nAdding yield...");
+    const yieldAmount = oneHundred;
+    await TEST0.mint(XTEST0.address, yieldAmount);
+
+    // Check state after yield but before claim
+    console.log("\nState after yield (before claim):");
+    console.log("- TVL:", ethers.utils.formatUnits(await plugin0.getTvl(), 18));
+    console.log(
+      "- Reference Amount:",
+      ethers.utils.formatUnits(await plugin0.amountReference(), 18)
+    );
+    console.log(
+      "- Plugin XTEST0 Balance:",
+      ethers.utils.formatUnits(await XTEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- XTEST0 Total Assets:",
+      ethers.utils.formatUnits(await XTEST0.totalAssets(), 18)
+    );
+
+    // Distribute via Controller
+    console.log("\nCklaiming and Distributing via Controller...");
+    await controller.distributeToAuctions();
+
+    // Check final state
+    const afterYieldTVL = await plugin0.getTvl();
+    const afterYieldRef = await plugin0.amountReference();
+    console.log("\nFinal State:");
+    console.log("- TVL:", ethers.utils.formatUnits(afterYieldTVL, 18));
+    console.log(
+      "- Reference Amount:",
+      ethers.utils.formatUnits(afterYieldRef, 18)
+    );
+    console.log(
+      "- Plugin XTEST0 Balance:",
+      ethers.utils.formatUnits(await XTEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- Plugin TEST0 Balance:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- RewardAuction TEST0 Balance:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- Asset Auction OTOKEN Balance:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(auction0.address), 18)
+    );
+
+    // Verify the distribution worked correctly
+    expect(afterYieldRef).to.equal(beforeYieldRef); // Reference amount should stay the same
+    expect(await TEST0.balanceOf(rewardAuction.address)).to.be.gt(0); // RewardAuction should have received yield in TEST0
+    expect(await OTOKEN.balanceOf(auction0.address)).to.be.gt(0); // Asset Auction should have received OTOKEN
+
+    console.log("\nYield claim and distribution complete!");
+  });
+
+  it("Buy from auction after 2 hour delay", async function () {
+    console.log("******************************************************");
+    console.log("Testing auction purchase after 2 hour delay");
+    console.log();
+
+    // Forward time by 2 hours
+    await network.provider.send("evm_increaseTime", [2 * 3600]);
+    await network.provider.send("evm_mine");
+
+    // Get auction details before purchase
+    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const currentPrice = await auction0.getPrice();
+    const currentEpoch = (await auction0.getSlot0()).epochId;
+
+    console.log("Pre-Purchase Auction State:");
+    console.log("- Current Price:", ethers.utils.formatUnits(currentPrice, 18));
+    console.log(
+      "- OTOKEN Available:",
+      ethers.utils.formatUnits(pluginCard.offeredOTOKEN, 18)
+    );
+    console.log("- Current Epoch:", currentEpoch.toString());
+
+    // Get enough TEST0 to cover auction price for user1
+    await TEST0.mint(user1.address, currentPrice.mul(2)); // Extra for buffer
+    await TEST0.connect(user1).approve(XTEST0.address, currentPrice.mul(2));
+    await XTEST0.connect(user1).deposit(currentPrice.mul(2), user1.address);
+
+    // Approve auction to spend XTEST0
+    await XTEST0.connect(user1).approve(auction0.address, currentPrice);
+
+    // Buy from auction with proper parameters
+    console.log("\nPurchasing from auction...");
+    const deadline = 1792282187;
+    await controller.distribute();
+    await auction0
+      .connect(user1)
+      .buy(
+        [OTOKEN.address],
+        user1.address,
+        currentEpoch,
+        deadline,
+        currentPrice
+      );
+
+    // Get post-purchase state
+    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    console.log("\nPost-Purchase Auction State:");
+    console.log(
+      "- New Price:",
+      ethers.utils.formatUnits(postPluginCard.auctionPrice, 18)
+    );
+    console.log(
+      "- OTOKEN Remaining:",
+      ethers.utils.formatUnits(postPluginCard.offeredOTOKEN, 18)
+    );
+    console.log(
+      "- User1 OTOKEN Balance:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(user1.address), 18)
+    );
+    console.log("- New Epoch:", (await auction0.getSlot0()).epochId.toString());
+
+    expect(postPluginCard.offeredOTOKEN).to.be.lt(pluginCard.offeredOTOKEN);
+    expect(await OTOKEN.balanceOf(user1.address)).to.be.gt(0);
+
+    console.log("\nAuction purchase complete!");
   });
 });

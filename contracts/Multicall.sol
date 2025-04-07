@@ -162,9 +162,10 @@ contract Multicall {
 
         uint256 tvl;
         uint256 votingWeight;
-        uint256 auctionEpochPerdiod;
+        uint256 auctionEpochDuration;
         uint256 auctionPriceMultiplier;
         uint256 auctionMinInitPrice;
+        uint256 auctionEpoch;
         uint256 auctionInitPrice;
         uint256 auctionStartTime;
         uint256 auctionPrice;
@@ -284,10 +285,11 @@ contract Multicall {
         pluginCard.tvl = IPlugin(plugin).getTvl();
         pluginCard.votingWeight = (IVoter(voter).totalWeight() == 0 ? 0 : 100 * IVoter(voter).weights(plugin) * 1e18 / IVoter(voter).totalWeight());
 
-        pluginCard.auctionEpochPerdiod = IAuction(pluginCard.assetAuction).epochPeriod();
+        pluginCard.auctionEpochDuration = IAuction(pluginCard.assetAuction).epochPeriod();
         pluginCard.auctionPriceMultiplier = IAuction(pluginCard.assetAuction).priceMultiplier();
         pluginCard.auctionMinInitPrice = IAuction(pluginCard.assetAuction).minInitPrice();
         IAuction.Slot0 memory slot0 = IAuction(pluginCard.assetAuction).getSlot0();
+        pluginCard.auctionEpoch = slot0.epochId;
         pluginCard.auctionInitPrice = slot0.initPrice;
         pluginCard.auctionStartTime = slot0.startTime;
         pluginCard.auctionPrice = IAuction(pluginCard.assetAuction).getPrice();
