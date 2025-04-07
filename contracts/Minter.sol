@@ -37,11 +37,11 @@ contract Minter is Ownable {
     /*===================================================================*/
     /*===========================  SETTINGS  ============================*/
 
-    uint internal constant WEEKLY_EMISSION_RATE = 80000;        // 80000 oBERO per week
-    uint internal constant MAX_WEEKLY_EMISSION_RATE = 100000;   // 100000 oBERO per week
+    uint internal constant WEEKLY_EMISSION_RATE = 80000;        // 80000 oSHERE per week
+    uint internal constant MAX_WEEKLY_EMISSION_RATE = 100000;   // 100000 oSHERE per week
 
-    uint internal constant TAIL_EMISSION_RATE = 2000;       // 2000 oBERO per week
-    uint internal constant MIN_TAIL_EMISSION_RATE = 100;    // 100 oBERO per week
+    uint internal constant TAIL_EMISSION_RATE = 2000;       // 2000 oSHERE per week
+    uint internal constant MIN_TAIL_EMISSION_RATE = 100;    // 100 oSHERE per week
 
     uint internal constant GROWTH_RATE = 20;    // 20% of emissions go to growth (stakers)
     uint internal constant TEAM_RATE = 5;       // 5% of emissions go to the team

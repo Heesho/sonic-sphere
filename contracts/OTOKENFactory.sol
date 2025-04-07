@@ -19,7 +19,7 @@ contract OTOKEN is ERC20, ERC20Burnable {
     string internal constant NAME = "SonicSphere Call Option";    // name of oTOKEN
     string internal constant SYMBOL = "oSPHERE";                  // symbol of oTOKEN
     
-    uint internal constant INITIAL_SUPPLY = 2000000;    // initial supply of oTOKEN
+    uint internal constant INITIAL_SUPPLY = 5000000;    // initial supply of oTOKEN
 
     /*===========================  END SETTINGS  ========================*/
     /*===================================================================*/

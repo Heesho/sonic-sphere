@@ -76,7 +76,7 @@ contract TOKEN is ERC20, ReentrancyGuard {
     /*===========================  SETTINGS  ============================*/
 
     string internal constant NAME = 'SonicSphere';  // Name of TOKEN
-    string internal constant SYMBOL = 'SONIC';      // Symbol of TOKEN
+    string internal constant SYMBOL = 'SPHERE';     // Symbol of TOKEN
 
     uint256 public constant SWAP_FEE = 30;      // Swap fee: buy, sell
     uint256 public constant BORROW_FEE = 250;      // borrow fee
