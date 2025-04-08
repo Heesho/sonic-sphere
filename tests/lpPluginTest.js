@@ -33,7 +33,9 @@ let auctionFactory, rewardAuction;
 let pluginFactory;
 let TEST0, TEST1, LP0, plugin0, gauge0, bribe0, auction0;
 
-describe("lpPluginTest", function () {
+let router;
+
+describe.only("lpPluginTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -823,5 +825,382 @@ describe("lpPluginTest", function () {
     expect(await TEST1.balanceOf(user1.address)).to.be.gt(0);
     expect(await TEST0.balanceOf(user2.address)).to.be.gt(0);
     expect(await TEST1.balanceOf(user2.address)).to.be.gt(0);
+  });
+
+  it("Deploy and setup Router", async function () {
+    console.log("******************************************************");
+    console.log("Deploying Router");
+
+    const RouterArtifact = await ethers.getContractFactory("Router");
+    router = await RouterArtifact.deploy(
+      voter.address,
+      TOKEN.address,
+      OTOKEN.address,
+      rewardAuction.address
+    );
+    console.log("Router deployed to:", router.address);
+  });
+
+  it("Test buyFromAssetAuction through Router", async function () {
+    console.log("******************************************************");
+    console.log("Testing asset auction purchase through router");
+    console.log();
+
+    // First get OTOKEN into the auction
+    await controller.distribute();
+
+    // Get auction states
+    const assetAuction = await ethers.getContractAt(
+      "Auction",
+      await plugin0.getAssetAuction()
+    );
+    const currentPrice = await assetAuction.getPrice();
+    const currentEpoch = (await assetAuction.getSlot0()).epochId;
+
+    console.log("Pre-Purchase State:");
+    console.log("- Current Price:", ethers.utils.formatUnits(currentPrice, 18));
+    console.log("- Current Epoch:", currentEpoch.toString());
+    console.log(
+      "- OTOKEN in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    // Get LP0 for auction payment
+    await LP0.mint(user1.address, currentPrice.mul(2));
+    await LP0.connect(user1).approve(assetAuction.address, currentPrice.mul(2));
+
+    // Buy through router
+    await router
+      .connect(user1)
+      .buyFromAssetAuction(
+        plugin0.address,
+        currentEpoch,
+        1792282187,
+        currentPrice
+      );
+
+    console.log("\nPost-Purchase State:");
+    console.log(
+      "- User1 OTOKEN:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(user1.address), 18)
+    );
+    console.log(
+      "- OTOKEN in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    expect(await OTOKEN.balanceOf(user1.address)).to.be.gt(0);
+  });
+
+  it("Test buyFromRewardAuction through Router - corrected", async function () {
+    console.log("******************************************************");
+    console.log(
+      "Testing reward auction purchase through router - with correct approvals"
+    );
+    console.log();
+
+    // First generate some rewards
+    await LP0.mint(plugin0.address, oneHundred);
+    await TEST0.mint(LP0.address, oneThousand);
+    await TEST1.mint(LP0.address, oneThousand);
+    await plugin0.connect(multisig).claim();
+    await plugin0.connect(multisig).distribute([TEST0.address, TEST1.address]);
+
+    // Get auction states
+    const currentPrice = await rewardAuction.getPrice();
+    const currentEpoch = (await rewardAuction.getSlot0()).epochId;
+
+    console.log("Pre-Purchase State:");
+    console.log("- Current Price:", ethers.utils.formatUnits(currentPrice, 18));
+    console.log("- Current Epoch:", currentEpoch.toString());
+    console.log(
+      "- TEST0 in Auction:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- TEST1 in Auction:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(rewardAuction.address), 18)
+    );
+
+    // Get TOKEN for auction payment
+    const baseAmount = oneThousand.mul(100);
+    await BASE.mint(user2.address, baseAmount);
+    await BASE.connect(user2).approve(TOKEN.address, baseAmount);
+    await TOKEN.connect(user2).buy(baseAmount, 1, 1792282187, user2.address);
+
+    // Approve router (not rewardAuction)
+    const tokenBalance = await TOKEN.balanceOf(user2.address);
+    console.log(
+      "\nTOKEN balance before purchase:",
+      ethers.utils.formatUnits(tokenBalance, 18)
+    );
+    await TOKEN.connect(user2).approve(router.address, tokenBalance);
+
+    // Buy through router
+    await router
+      .connect(user2)
+      .buyFromRewardAuction(
+        [TEST0.address, TEST1.address],
+        currentEpoch,
+        1792282187,
+        currentPrice
+      );
+
+    console.log("\nPost-Purchase State:");
+    console.log(
+      "- User2 TEST0:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(user2.address), 18)
+    );
+    console.log(
+      "- User2 TEST1:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(user2.address), 18)
+    );
+    console.log(
+      "- TEST0 in Auction:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- TEST1 in Auction:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(rewardAuction.address), 18)
+    );
+
+    expect(await TEST0.balanceOf(user2.address)).to.be.gt(0);
+    expect(await TEST1.balanceOf(user2.address)).to.be.gt(0);
+  });
+
+  it("Test buyFromAssetAuction through Router - spending LP for OTOKEN", async function () {
+    console.log("******************************************************");
+    console.log(
+      "Testing asset auction purchase through router - LP for OTOKEN"
+    );
+    console.log();
+
+    await controller.distribute();
+
+    // Get auction states
+    const assetAuction = await ethers.getContractAt(
+      "Auction",
+      await plugin0.getAssetAuction()
+    );
+    const currentPrice = await assetAuction.getPrice();
+    const currentEpoch = (await assetAuction.getSlot0()).epochId;
+
+    console.log("Pre-Purchase State:");
+    console.log(
+      "- Current Price (in LP):",
+      ethers.utils.formatUnits(currentPrice, 18)
+    );
+    console.log("- Current Epoch:", currentEpoch.toString());
+    console.log(
+      "- OTOKEN in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    // Mint LP tokens to user and approve router
+    await LP0.mint(user1.address, currentPrice.mul(2));
+    await LP0.connect(user1).approve(router.address, currentPrice.mul(2));
+
+    // Record initial balances
+    const initialOTOKENBalance = await OTOKEN.balanceOf(user1.address);
+    const initialLPBalance = await LP0.balanceOf(user1.address);
+
+    // Buy through router
+    await router
+      .connect(user1)
+      .buyFromAssetAuction(
+        plugin0.address,
+        currentEpoch,
+        1792282187,
+        currentPrice
+      );
+
+    // Get final balances
+    const finalOTOKENBalance = await OTOKEN.balanceOf(user1.address);
+    const finalLPBalance = await LP0.balanceOf(user1.address);
+
+    console.log("\nPost-Purchase State:");
+    console.log(
+      "- LP tokens spent:",
+      ethers.utils.formatUnits(initialLPBalance.sub(finalLPBalance), 18)
+    );
+    console.log(
+      "- OTOKEN received:",
+      ethers.utils.formatUnits(finalOTOKENBalance.sub(initialOTOKENBalance), 18)
+    );
+    console.log(
+      "- OTOKEN remaining in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    expect(finalOTOKENBalance).to.be.gt(initialOTOKENBalance);
+  });
+
+  it("Test second buyFromAssetAuction through Router - with non-zero price", async function () {
+    console.log("******************************************************");
+    console.log(
+      "Testing second asset auction purchase through router - with price of 10"
+    );
+    console.log();
+
+    await controller.distribute();
+
+    // Get auction states
+    const assetAuction = await ethers.getContractAt(
+      "Auction",
+      await plugin0.getAssetAuction()
+    );
+    const currentPrice = await assetAuction.getPrice();
+    const currentEpoch = (await assetAuction.getSlot0()).epochId;
+
+    console.log("Pre-Purchase State:");
+    console.log(
+      "- Current Price (in LP):",
+      ethers.utils.formatUnits(currentPrice, 18)
+    );
+    console.log("- Current Epoch:", currentEpoch.toString());
+    console.log(
+      "- OTOKEN in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    // Mint LP tokens to user and approve router
+    await LP0.mint(user2.address, currentPrice.mul(2));
+    await LP0.connect(user2).approve(router.address, currentPrice.mul(2));
+
+    // Record initial balances
+    const initialOTOKENBalance = await OTOKEN.balanceOf(user2.address);
+    const initialLPBalance = await LP0.balanceOf(user2.address);
+
+    // Buy through router
+    await router
+      .connect(user2)
+      .buyFromAssetAuction(
+        plugin0.address,
+        currentEpoch,
+        1792282187,
+        currentPrice
+      );
+
+    // Get final balances
+    const finalOTOKENBalance = await OTOKEN.balanceOf(user2.address);
+    const finalLPBalance = await LP0.balanceOf(user2.address);
+
+    console.log("\nPost-Purchase State:");
+    console.log(
+      "- LP tokens spent:",
+      ethers.utils.formatUnits(initialLPBalance.sub(finalLPBalance), 18)
+    );
+    console.log(
+      "- OTOKEN received:",
+      ethers.utils.formatUnits(finalOTOKENBalance.sub(initialOTOKENBalance), 18)
+    );
+    console.log(
+      "- OTOKEN remaining in Auction:",
+      ethers.utils.formatUnits(await OTOKEN.balanceOf(assetAuction.address), 18)
+    );
+
+    // Verify non-zero amounts were transferred
+    expect(finalOTOKENBalance).to.be.gt(initialOTOKENBalance);
+    expect(finalLPBalance).to.be.lt(initialLPBalance);
+  });
+
+  it("Forward time 20 hours", async function () {
+    console.log("******************************************************");
+    console.log("Forwarding time 20 hours");
+    console.log();
+    await ethers.provider.send("evm_increaseTime", [20 * 3600]);
+    await ethers.provider.send("evm_mine");
+  });
+
+  it("Test multiple plugins through reward auction Router", async function () {
+    console.log("******************************************************");
+    console.log("Testing reward auction with multiple plugins");
+    console.log();
+
+    // Add another plugin to voter
+    await pluginFactory.createPlugin(
+      "Protocol1 LP1",
+      voter.address,
+      LP0.address,
+      [TEST0.address, TEST1.address],
+      oneHundred,
+      24 * 3600,
+      two,
+      ten
+    );
+    const plugin1 = await ethers.getContractAt(
+      "LPPlugin",
+      await pluginFactory.lastPlugin()
+    );
+    await voter.connect(owner).addPlugin(plugin1.address);
+    await plugin1.connect(multisig).initialize();
+
+    // Generate rewards for both plugins
+    await LP0.mint(plugin0.address, oneHundred);
+    await LP0.mint(plugin1.address, oneHundred);
+    await TEST0.mint(LP0.address, oneThousand.mul(2));
+    await TEST1.mint(LP0.address, oneThousand.mul(2));
+
+    // Get auction states
+    const currentPrice = await rewardAuction.getPrice();
+    const currentEpoch = (await rewardAuction.getSlot0()).epochId;
+
+    // Get TOKEN for auction payment - use much larger amount for multiple plugins
+    const baseAmount = oneThousand.mul(200); // Increased amount further
+    await BASE.mint(user1.address, baseAmount);
+    await BASE.connect(user1).approve(TOKEN.address, baseAmount);
+    await TOKEN.connect(user1).buy(baseAmount, 1, 1792282187, user1.address);
+
+    // Check TOKEN balance and approve
+    const tokenBalance = await TOKEN.balanceOf(user1.address);
+    console.log(
+      "\nTOKEN balance before purchase:",
+      ethers.utils.formatUnits(tokenBalance, 18)
+    );
+    await TOKEN.connect(user1).approve(router.address, tokenBalance);
+
+    console.log("Pre-Purchase Balances:");
+    console.log(
+      "- TEST0 in Auction:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- TEST1 in Auction:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "Current Price (TOKEN): ",
+      ethers.utils.formatUnits(currentPrice, 18)
+    );
+    // Buy through router
+    await router
+      .connect(user1)
+      .buyFromRewardAuction(
+        [TEST0.address, TEST1.address],
+        currentEpoch,
+        1792282187,
+        currentPrice
+      );
+
+    console.log("\nPost-Purchase Balances:");
+    console.log(
+      "- User1 TEST0:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(user1.address), 18)
+    );
+    console.log(
+      "- User1 TEST1:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(user1.address), 18)
+    );
+    console.log(
+      "- TEST0 in Auction:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(rewardAuction.address), 18)
+    );
+    console.log(
+      "- TEST1 in Auction:",
+      ethers.utils.formatUnits(await TEST1.balanceOf(rewardAuction.address), 18)
+    );
+
+    expect(await TEST0.balanceOf(user1.address)).to.be.gt(0);
+    expect(await TEST1.balanceOf(user1.address)).to.be.gt(0);
   });
 });

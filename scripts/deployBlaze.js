@@ -19,7 +19,7 @@ const MULTISIG = "0x039ec2E90454892fCbA461Ecf8878D0C45FDdFeE"; // Multisig Addre
 let OTOKENFactory, VTOKENFactory, feesFactory, rewarderFactory;
 let TOKEN, OTOKEN, VTOKEN, fees, rewarder;
 let voter, minter, gaugeFactory, bribeFactory, auctionFactory, rewardAuction;
-let multicall, controller;
+let multicall, controller, router;
 
 let wS, USDC, SWPX; // erc20
 let stS; // erc4626
@@ -94,6 +94,10 @@ async function getContracts() {
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
     "0xbBc46f6DBB199c85CCa67aD06C4D4949d09caFc3"
+  );
+  router = await ethers.getContractAt(
+    "contracts/Router.sol:Router",
+    "0x544886B3ee3f90C5a838dFfcfF692Ed26AE018a6"
   );
 
   wS = await ethers.getContractAt(
@@ -561,10 +565,40 @@ async function deployController() {
   console.log("Controller Deployed at:", controller.address);
 }
 
+async function deployRouter() {
+  console.log("Starting Router Deployment");
+  const routerArtifact = await ethers.getContractFactory("Router");
+  const routerContract = await routerArtifact.deploy(
+    voter.address,
+    TOKEN.address,
+    OTOKEN.address,
+    rewardAuction.address
+  );
+  router = await routerContract.deployed();
+  await sleep(5000);
+  console.log("Router Deployed at:", router.address);
+}
+
+async function verifyRouter() {
+  console.log("Starting Router Verification");
+  await hre.run("verify:verify", {
+    address: router.address,
+    contract: "contracts/Router.sol:Router",
+    constructorArguments: [
+      voter.address,
+      TOKEN.address,
+      OTOKEN.address,
+      rewardAuction.address,
+    ],
+  });
+  console.log("Router Verified");
+}
+
 async function printAncillaryAddresses() {
   console.log("**************************************************************");
   console.log("Multicall: ", multicall.address);
   console.log("Controller: ", controller.address);
+  console.log("Router: ", router.address);
   console.log("**************************************************************");
 }
 
@@ -1004,6 +1038,7 @@ async function main() {
   // console.log("Starting Ancillary Deployment");
   // await deployMulticall();
   // await deployController();
+  // await deployRouter();
   // await printAncillaryAddresses();
 
   //===================================================================
@@ -1013,6 +1048,7 @@ async function main() {
   // console.log("Starting Ancillary Verification");
   // await verifyMulticall();
   // await verifyController();
+  // await verifyRouter();
   // console.log("Ancillary Contracts Verified");
 
   //===================================================================
