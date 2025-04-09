@@ -89,7 +89,7 @@ async function getContracts() {
 
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x47e15594D93e63c3450063aCe94d806F38A59278"
+    "0x46C941d5D09D6740E76Be7e2f9a6dB930c06e484"
   );
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
@@ -97,7 +97,7 @@ async function getContracts() {
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0x544886B3ee3f90C5a838dFfcfF692Ed26AE018a6"
+    "0xC8210e8F9F57655b45ebD2f26dA99E0af76c13Fc"
   );
 
   wS = await ethers.getContractAt(
@@ -572,6 +572,7 @@ async function deployRouter() {
     voter.address,
     TOKEN.address,
     OTOKEN.address,
+    multicall.address,
     rewardAuction.address
   );
   router = await routerContract.deployed();
@@ -588,6 +589,7 @@ async function verifyRouter() {
       voter.address,
       TOKEN.address,
       OTOKEN.address,
+      multicall.address,
       rewardAuction.address,
     ],
   });

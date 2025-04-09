@@ -363,6 +363,24 @@ contract Multicall {
     function getPlugin(uint256 index) public view returns (address) {
         return IVoter(voter).plugins(index);
     }
+    
+    function getRewardAuctionAssets() external view returns (address[] memory) {
+        address[] memory plugins = IVoter(voter).getPlugins();
+        uint256 assetsLength = 0;
+        for (uint i = 0; i < plugins.length; i++) {
+            assetsLength += IPlugin(plugins[i]).getRewardTokens().length;
+        }
+        address[] memory rewardAuctionAssets = new address[](assetsLength);
+        uint256 index = 0;
+        for (uint i = 0; i < plugins.length; i++) {
+            address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
+            for (uint j = 0; j < rewardTokens.length; j++) {
+                rewardAuctionAssets[index] = rewardTokens[j];
+                index++;
+            }
+        }
+        return rewardAuctionAssets;
+    }
 
     function quoteBuyIn(uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
         uint256 feeBASE = input * FEE / DIVISOR;

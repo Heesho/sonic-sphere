@@ -35,7 +35,7 @@ let TEST0, TEST1, LP0, plugin0, gauge0, bribe0, auction0;
 
 let router;
 
-describe.only("lpPluginTest", function () {
+describe("lpPluginTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -836,6 +836,7 @@ describe.only("lpPluginTest", function () {
       voter.address,
       TOKEN.address,
       OTOKEN.address,
+      multicall.address,
       rewardAuction.address
     );
     console.log("Router deployed to:", router.address);
@@ -939,12 +940,7 @@ describe.only("lpPluginTest", function () {
     // Buy through router
     await router
       .connect(user2)
-      .buyFromRewardAuction(
-        [TEST0.address, TEST1.address],
-        currentEpoch,
-        1792282187,
-        currentPrice
-      );
+      .buyFromRewardAuction(currentEpoch, 1792282187, currentPrice);
 
     console.log("\nPost-Purchase State:");
     console.log(
@@ -1175,12 +1171,7 @@ describe.only("lpPluginTest", function () {
     // Buy through router
     await router
       .connect(user1)
-      .buyFromRewardAuction(
-        [TEST0.address, TEST1.address],
-        currentEpoch,
-        1792282187,
-        currentPrice
-      );
+      .buyFromRewardAuction(currentEpoch, 1792282187, currentPrice);
 
     console.log("\nPost-Purchase Balances:");
     console.log(

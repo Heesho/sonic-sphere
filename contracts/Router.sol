@@ -15,6 +15,10 @@ interface IPlugin {
     function distribute(address[] memory tokens) external;
 }
 
+interface IMulticall {
+    function getRewardAuctionAssets() external view returns (address[] memory);
+}
+
 interface IAuction {
     function paymentToken() external view returns (address);
     function buy(
@@ -32,6 +36,7 @@ contract Router {
     address public immutable voter;
     address public immutable token;
     address public immutable oToken;
+    address public immutable multicall;
     address public immutable rewardAuction;
 
     /*----------  ERRORS  ---------------------------------------------*/
@@ -42,10 +47,11 @@ contract Router {
 
     /*----------  FUNCTIONS  -----------------------------------------*/
 
-    constructor(address _voter, address _token, address _oToken, address _rewardAuction) {
+    constructor(address _voter, address _token, address _oToken, address _multicall, address _rewardAuction) {
         voter = _voter;
         token = _token;
         oToken = _oToken;
+        multicall = _multicall;
         rewardAuction = _rewardAuction;
     }
 
@@ -55,7 +61,6 @@ contract Router {
         uint256 deadline,
         uint256 maxPayment
     ) external {
-
         address auction = IPlugin(plugin).getAssetAuction();
         address paymentToken = IAuction(auction).paymentToken();
         address[] memory assets = new address[](1);
@@ -76,7 +81,6 @@ contract Router {
     }
 
     function buyFromRewardAuction(
-        address[] calldata assets,
         uint256 epochId,
         uint256 deadline,
         uint256 maxPayment
@@ -87,6 +91,7 @@ contract Router {
             IPlugin(plugins[i]).claim();
             IPlugin(plugins[i]).distribute(rewardTokens);
         }
+        address[] memory assets = IMulticall(multicall).getRewardAuctionAssets();
         IERC20(token).safeTransferFrom(msg.sender, address(this), maxPayment);
         IERC20(token).approve(rewardAuction, 0);
         IERC20(token).approve(rewardAuction, maxPayment);
