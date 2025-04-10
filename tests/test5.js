@@ -173,7 +173,8 @@ describe("test5", function () {
       TOKEN.address,
       OTOKEN.address,
       VTOKEN.address,
-      rewarder.address
+      rewarder.address,
+      AddressZero
     );
     multicall = await ethers.getContractAt(
       "Multicall",

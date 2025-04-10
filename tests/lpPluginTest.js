@@ -185,38 +185,6 @@ describe("lpPluginTest", function () {
     );
     console.log("- TOKENGovernor Initialized");
 
-    // initialize Multicall
-    const multicallArtifact = await ethers.getContractFactory("Multicall");
-    const multicallContract = await multicallArtifact.deploy(
-      voter.address,
-      BASE.address,
-      TOKEN.address,
-      OTOKEN.address,
-      VTOKEN.address,
-      rewarder.address
-    );
-    multicall = await ethers.getContractAt(
-      "Multicall",
-      multicallContract.address
-    );
-    console.log("- Multicall Initialized");
-
-    const controllerArtifact = await ethers.getContractFactory("Controller");
-    controller = await controllerArtifact.deploy(voter.address, fees.address);
-    console.log("- Controller Initialized");
-
-    // System set-up
-    await gaugeFactory.setVoter(voter.address);
-    await bribeFactory.setVoter(voter.address);
-    await VTOKEN.connect(owner).addReward(TOKEN.address);
-    await VTOKEN.connect(owner).addReward(OTOKEN.address);
-    await VTOKEN.connect(owner).addReward(BASE.address);
-    await VTOKEN.connect(owner).setVoter(voter.address);
-    await OTOKEN.connect(owner).setMinter(minter.address);
-    await voter.initialize(minter.address);
-    await minter.initialize();
-    console.log("- System set up");
-
     // initialize AuctionFactory
     const AuctionFactoryArtifact = await ethers.getContractFactory(
       "AuctionFactory"
@@ -239,6 +207,39 @@ describe("lpPluginTest", function () {
       await auctionFactory.last_auction()
     );
     console.log("- RewardAuction Initialized");
+
+    // initialize Multicall
+    const multicallArtifact = await ethers.getContractFactory("Multicall");
+    const multicallContract = await multicallArtifact.deploy(
+      voter.address,
+      BASE.address,
+      TOKEN.address,
+      OTOKEN.address,
+      VTOKEN.address,
+      rewarder.address,
+      rewardAuction.address
+    );
+    multicall = await ethers.getContractAt(
+      "Multicall",
+      multicallContract.address
+    );
+    console.log("- Multicall Initialized");
+
+    const controllerArtifact = await ethers.getContractFactory("Controller");
+    controller = await controllerArtifact.deploy(voter.address, fees.address);
+    console.log("- Controller Initialized");
+
+    // System set-up
+    await gaugeFactory.setVoter(voter.address);
+    await bribeFactory.setVoter(voter.address);
+    await VTOKEN.connect(owner).addReward(TOKEN.address);
+    await VTOKEN.connect(owner).addReward(OTOKEN.address);
+    await VTOKEN.connect(owner).addReward(BASE.address);
+    await VTOKEN.connect(owner).setVoter(voter.address);
+    await OTOKEN.connect(owner).setMinter(minter.address);
+    await voter.initialize(minter.address);
+    await minter.initialize();
+    console.log("- System set up");
 
     // initialize pluginFactory
     const LPPluginFactoryArtifact = await ethers.getContractFactory(
@@ -1193,5 +1194,58 @@ describe("lpPluginTest", function () {
 
     expect(await TEST0.balanceOf(user1.address)).to.be.gt(0);
     expect(await TEST1.balanceOf(user1.address)).to.be.gt(0);
+  });
+
+  it("Test rewardAuctionData from Multicall", async function () {
+    console.log("******************************************************");
+    console.log("Testing rewardAuctionData from Multicall");
+    console.log();
+
+    // Call the rewardAuctionData function
+    const rewardAuctionData = await multicall.rewardAuctionData();
+
+    // Log the retrieved data
+    console.log("Reward Auction Data:");
+    console.log("- Assets:", rewardAuctionData.assets);
+    console.log(
+      "- Amounts:",
+      rewardAuctionData.amounts.map((amount) =>
+        ethers.utils.formatUnits(amount, 18)
+      )
+    );
+    console.log(
+      "- Auction Epoch Duration:",
+      rewardAuctionData.auctionEpochDuration.toString()
+    );
+    console.log(
+      "- Auction Price Multiplier:",
+      rewardAuctionData.auctionPriceMultiplier.toString()
+    );
+    console.log(
+      "- Auction Min Init Price:",
+      ethers.utils.formatUnits(rewardAuctionData.auctionMinInitPrice, 18)
+    );
+    console.log("- Auction Epoch:", rewardAuctionData.auctionEpoch.toString());
+    console.log(
+      "- Auction Init Price:",
+      ethers.utils.formatUnits(rewardAuctionData.auctionInitPrice, 18)
+    );
+    console.log(
+      "- Auction Start Time:",
+      new Date(
+        rewardAuctionData.auctionStartTime.toNumber() * 1000
+      ).toISOString()
+    );
+    console.log(
+      "- Auction Price:",
+      ethers.utils.formatUnits(rewardAuctionData.auctionPrice, 18)
+    );
+
+    // Verify some key parameters
+    expect(rewardAuctionData.assets).to.include(TEST0.address);
+    expect(rewardAuctionData.assets).to.include(TEST1.address);
+    expect(rewardAuctionData.auctionEpochDuration).to.equal(24 * 3600); // Assuming 1 day epoch
+    expect(rewardAuctionData.auctionPriceMultiplier).to.equal(two); // Assuming multiplier is 2
+    expect(rewardAuctionData.auctionMinInitPrice).to.equal(ten); // Assuming min init price is 10
   });
 });

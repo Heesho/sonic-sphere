@@ -89,7 +89,7 @@ async function getContracts() {
 
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x46C941d5D09D6740E76Be7e2f9a6dB930c06e484"
+    "0x61C9e5478667633456c150Ea84bC0C4E6eBe0d40"
   );
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
@@ -97,7 +97,7 @@ async function getContracts() {
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0xC8210e8F9F57655b45ebD2f26dA99E0af76c13Fc"
+    "0xaF978175A9F0f7361e8c088902EFF8f1e6a48911"
   );
 
   wS = await ethers.getContractAt(
@@ -545,6 +545,7 @@ async function deployMulticall() {
     OTOKEN.address,
     VTOKEN.address,
     rewarder.address,
+    rewardAuction.address,
     { gasPrice: ethers.gasPrice }
   );
   multicall = await multicallContract.deployed();
@@ -616,6 +617,7 @@ async function verifyMulticall() {
       OTOKEN.address,
       VTOKEN.address,
       rewarder.address,
+      rewardAuction.address,
     ],
   });
   console.log("Multicall Verified");
@@ -1048,9 +1050,9 @@ async function main() {
   //===================================================================
 
   // console.log("Starting Ancillary Verification");
-  // await verifyMulticall();
+  await verifyMulticall();
   // await verifyController();
-  // await verifyRouter();
+  await verifyRouter();
   // console.log("Ancillary Contracts Verified");
 
   //===================================================================

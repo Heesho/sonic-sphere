@@ -25,7 +25,7 @@ let VTOKENFactory,
   rewarderFactory,
   gaugeFactory,
   bribeFactory;
-let minter, voter, fees, rewarder, governance, multicall, priceOracle;
+let minter, voter, fees, rewarder, governance, multicall, priceOracle, router;
 let TOKEN, VTOKEN, OTOKEN, BASE;
 
 describe("test4", function () {
@@ -173,7 +173,8 @@ describe("test4", function () {
       TOKEN.address,
       OTOKEN.address,
       VTOKEN.address,
-      rewarder.address
+      rewarder.address,
+      AddressZero
     );
     multicall = await ethers.getContractAt(
       "Multicall",
@@ -181,6 +182,16 @@ describe("test4", function () {
     );
     console.log("- Multicall Initialized");
 
+    // initialize Router
+    const RouterArtifact = await ethers.getContractFactory("Router");
+    router = await RouterArtifact.deploy(
+      voter.address,
+      TOKEN.address,
+      OTOKEN.address,
+      multicall.address,
+      AddressZero
+    );
+    console.log("- Router Initialized");
     // System set-up
     await expect(
       gaugeFactory.connect(user2).setVoter(voter.address)
@@ -224,7 +235,7 @@ describe("test4", function () {
 
   it("Quote Buy In", async function () {
     console.log("******************************************************");
-    let res = await multicall.connect(owner).quoteBuyIn(ten, 9800);
+    let res = await router.connect(owner).quoteBuyIn(ten, 9800);
     console.log("BASE in", divDec(ten));
     console.log("Slippage Tolerance", "2%");
     console.log();
@@ -242,7 +253,7 @@ describe("test4", function () {
 
   it("Quote Sell In", async function () {
     console.log("******************************************************");
-    let res = await multicall.quoteSellIn(
+    let res = await router.quoteSellIn(
       await TOKEN.balanceOf(user0.address),
       9700
     );
@@ -276,7 +287,7 @@ describe("test4", function () {
 
   it("User0 Buys 10 TOKEN", async function () {
     console.log("******************************************************");
-    let res = await multicall.connect(owner).quoteBuyOut(ten, 9700);
+    let res = await router.connect(owner).quoteBuyOut(ten, 9700);
     console.log("TOKEN out", divDec(ten));
     console.log("Slippage Tolerance", "3%");
     console.log();
@@ -296,7 +307,7 @@ describe("test4", function () {
 
   it("User0 sells TOKEN for 5 BASE", async function () {
     console.log("******************************************************");
-    let res = await multicall.connect(owner).quoteSellOut(five, 9950);
+    let res = await router.connect(owner).quoteSellOut(five, 9950);
     console.log("BASE out", divDec(five));
     console.log("Slippage Tolerance", "0.5%");
     console.log();

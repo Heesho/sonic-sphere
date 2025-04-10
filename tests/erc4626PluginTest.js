@@ -180,38 +180,6 @@ describe("erc4626PluginTest", function () {
     );
     console.log("- TOKENGovernor Initialized");
 
-    // initialize Multicall
-    const multicallArtifact = await ethers.getContractFactory("Multicall");
-    const multicallContract = await multicallArtifact.deploy(
-      voter.address,
-      BASE.address,
-      TOKEN.address,
-      OTOKEN.address,
-      VTOKEN.address,
-      rewarder.address
-    );
-    multicall = await ethers.getContractAt(
-      "Multicall",
-      multicallContract.address
-    );
-    console.log("- Multicall Initialized");
-
-    const controllerArtifact = await ethers.getContractFactory("Controller");
-    controller = await controllerArtifact.deploy(voter.address, fees.address);
-    console.log("- Controller Initialized");
-
-    // System set-up
-    await gaugeFactory.setVoter(voter.address);
-    await bribeFactory.setVoter(voter.address);
-    await VTOKEN.connect(owner).addReward(TOKEN.address);
-    await VTOKEN.connect(owner).addReward(OTOKEN.address);
-    await VTOKEN.connect(owner).addReward(BASE.address);
-    await VTOKEN.connect(owner).setVoter(voter.address);
-    await OTOKEN.connect(owner).setMinter(minter.address);
-    await voter.initialize(minter.address);
-    await minter.initialize();
-    console.log("- System set up");
-
     // initialize AuctionFactory
     const AuctionFactoryArtifact = await ethers.getContractFactory(
       "AuctionFactory"
@@ -234,6 +202,39 @@ describe("erc4626PluginTest", function () {
       await auctionFactory.last_auction()
     );
     console.log("- RewardAuction Initialized");
+
+    // initialize Multicall
+    const multicallArtifact = await ethers.getContractFactory("Multicall");
+    const multicallContract = await multicallArtifact.deploy(
+      voter.address,
+      BASE.address,
+      TOKEN.address,
+      OTOKEN.address,
+      VTOKEN.address,
+      rewarder.address,
+      rewardAuction.address
+    );
+    multicall = await ethers.getContractAt(
+      "Multicall",
+      multicallContract.address
+    );
+    console.log("- Multicall Initialized");
+
+    const controllerArtifact = await ethers.getContractFactory("Controller");
+    controller = await controllerArtifact.deploy(voter.address, fees.address);
+    console.log("- Controller Initialized");
+
+    // System set-up
+    await gaugeFactory.setVoter(voter.address);
+    await bribeFactory.setVoter(voter.address);
+    await VTOKEN.connect(owner).addReward(TOKEN.address);
+    await VTOKEN.connect(owner).addReward(OTOKEN.address);
+    await VTOKEN.connect(owner).addReward(BASE.address);
+    await VTOKEN.connect(owner).setVoter(voter.address);
+    await OTOKEN.connect(owner).setMinter(minter.address);
+    await voter.initialize(minter.address);
+    await minter.initialize();
+    console.log("- System set up");
 
     // initialize pluginFactory
     const ERC4626PluginFactoryArtifact = await ethers.getContractFactory(

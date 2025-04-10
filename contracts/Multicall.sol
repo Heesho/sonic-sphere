@@ -2,10 +2,8 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./FixedPointMathLib.sol";
 
 interface ITOKEN {
-    function SWAP_FEE() external view returns (uint256);
     function frBASE() external view returns (uint256);
     function mrvBASE() external view returns (uint256);
     function mrrBASE() external view returns (uint256);
@@ -85,12 +83,6 @@ interface IGauge {
 }
 
 contract Multicall {
-    using FixedPointMathLib for uint256;
-
-    /*----------  CONSTANTS  --------------------------------------------*/
-
-    uint256 public constant DIVISOR = 10000;
-    uint256 public constant PRECISION = 1e18;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -100,8 +92,7 @@ contract Multicall {
     address public immutable OTOKEN;
     address public immutable VTOKEN;
     address public immutable rewarder;
-
-    uint256 public immutable FEE;
+    address public immutable auction;
 
     struct SwapCard {
         uint256 frBASE;
@@ -172,6 +163,18 @@ contract Multicall {
         uint256 offeredOTOKEN;
     }
 
+    struct RewardAuction {
+        address[] assets;
+        uint256[] amounts;
+        uint256 auctionEpochDuration;
+        uint256 auctionPriceMultiplier;
+        uint256 auctionMinInitPrice;
+        uint256 auctionEpoch;
+        uint256 auctionInitPrice;
+        uint256 auctionStartTime;
+        uint256 auctionPrice;
+    }
+
     struct BribeCard {
         address plugin;
         address bribe;
@@ -204,7 +207,8 @@ contract Multicall {
         address _TOKEN,
         address _OTOKEN,
         address _VTOKEN,
-        address _rewarder
+        address _rewarder,
+        address _auction
     ) {
         voter = _voter;
         BASE = _BASE;
@@ -212,8 +216,7 @@ contract Multicall {
         OTOKEN = _OTOKEN;
         VTOKEN = _VTOKEN;
         rewarder = _rewarder;
-
-        FEE = ITOKEN(TOKEN).SWAP_FEE();
+        auction = _auction;
     }
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
@@ -300,6 +303,35 @@ contract Multicall {
         return pluginCard;
     }
 
+    function rewardAuctionData() public view returns (RewardAuction memory rewardAuction) {
+        address[] memory plugins = IVoter(voter).getPlugins();
+        uint256 assetsLength = 0;
+        for (uint i = 0; i < plugins.length; i++) {
+            assetsLength += IPlugin(plugins[i]).getRewardTokens().length;
+        }
+        rewardAuction.assets = new address[](assetsLength);
+        rewardAuction.amounts = new uint256[](assetsLength);
+        uint256 index = 0;
+        for (uint i = 0; i < plugins.length; i++) {
+            address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
+            for (uint j = 0; j < rewardTokens.length; j++) {
+                rewardAuction.assets[index] = rewardTokens[j];
+                rewardAuction.amounts[index] = IERC20(rewardTokens[j]).balanceOf(auction);
+                index++;
+            }
+        }
+        rewardAuction.auctionEpochDuration = IAuction(auction).epochPeriod();
+        rewardAuction.auctionPriceMultiplier = IAuction(auction).priceMultiplier();
+        rewardAuction.auctionMinInitPrice = IAuction(auction).minInitPrice();
+        IAuction.Slot0 memory slot0 = IAuction(auction).getSlot0();
+        rewardAuction.auctionEpoch = slot0.epochId;
+        rewardAuction.auctionInitPrice = slot0.initPrice;
+        rewardAuction.auctionStartTime = slot0.startTime;
+        rewardAuction.auctionPrice = IAuction(auction).getPrice();
+
+        return rewardAuction;
+    }
+
     function bribeCardData(address plugin, address account) public view returns (BribeCard memory bribeCard) {
         bribeCard.plugin = plugin;
         bribeCard.bribe = IVoter(voter).bribes(plugin);
@@ -340,6 +372,22 @@ contract Multicall {
         return bribeCard;
     }
 
+    function portfolioData(address account) external view returns (Portfolio memory portfolio) {
+        uint256 priceBASE = getBasePrice();
+
+        portfolio.total = (account == address(0) ? 0 : priceBASE * (((IERC20(TOKEN).balanceOf(account) 
+            + IVTOKEN(VTOKEN).balanceOfTOKEN(account)) * ITOKEN(TOKEN).getMarketPrice() / 1e18)
+            + (IERC20(OTOKEN).balanceOf(account) * ITOKEN(TOKEN).getOTokenPrice() / 1e18)
+            - ITOKEN(TOKEN).debts(account)) / 1e18);
+
+        portfolio.stakingRewards = (account == address(0) ? 0 : priceBASE * (IVTOKENRewarder(rewarder).getRewardForDuration(BASE)
+            + (IVTOKENRewarder(rewarder).getRewardForDuration(TOKEN) * ITOKEN(TOKEN).getMarketPrice() / 1e18)
+            + (IVTOKENRewarder(rewarder).getRewardForDuration(OTOKEN) * ITOKEN(TOKEN).getOTokenPrice() / 1e18)) / 1e18
+            * IERC20(VTOKEN).balanceOf(account) / IERC20(VTOKEN).totalSupply());
+        
+        return portfolio;
+    }
+
     function getPluginCards(uint256 start, uint256 stop) external view returns (PluginCard[] memory) {
         PluginCard[] memory pluginCards = new PluginCard[](stop - start);
         for (uint i = start; i < stop; i++) {
@@ -362,85 +410,6 @@ contract Multicall {
 
     function getPlugin(uint256 index) public view returns (address) {
         return IVoter(voter).plugins(index);
-    }
-    
-    function getRewardAuctionAssets() external view returns (address[] memory) {
-        address[] memory plugins = IVoter(voter).getPlugins();
-        uint256 assetsLength = 0;
-        for (uint i = 0; i < plugins.length; i++) {
-            assetsLength += IPlugin(plugins[i]).getRewardTokens().length;
-        }
-        address[] memory rewardAuctionAssets = new address[](assetsLength);
-        uint256 index = 0;
-        for (uint i = 0; i < plugins.length; i++) {
-            address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
-            for (uint j = 0; j < rewardTokens.length; j++) {
-                rewardAuctionAssets[index] = rewardTokens[j];
-                index++;
-            }
-        }
-        return rewardAuctionAssets;
-    }
-
-    function quoteBuyIn(uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 feeBASE = input * FEE / DIVISOR;
-        uint256 oldMrBASE = ITOKEN(TOKEN).mrvBASE() + ITOKEN(TOKEN).mrrBASE();
-        uint256 newMrBASE = oldMrBASE + input - feeBASE;
-        uint256 oldMrTOKEN = ITOKEN(TOKEN).mrrTOKEN();
-        output = oldMrTOKEN - (oldMrBASE * oldMrTOKEN / newMrBASE);
-        slippage = 100 * (1e18 - (output * ITOKEN(TOKEN).getMarketPrice() / input));
-        minOutput = (input * 1e18 / ITOKEN(TOKEN).getMarketPrice()) * slippageTolerance / DIVISOR;
-        autoMinOutput = (input * 1e18 / ITOKEN(TOKEN).getMarketPrice()) * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
-    }
-
-    function quoteBuyOut(uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 oldMrBASE = ITOKEN(TOKEN).mrvBASE() + ITOKEN(TOKEN).mrrBASE();
-        output = DIVISOR * ((oldMrBASE * ITOKEN(TOKEN).mrrTOKEN() / (ITOKEN(TOKEN).mrrTOKEN() - input)) - oldMrBASE) / (DIVISOR - FEE);
-        slippage = 100 * (1e18 - (input * ITOKEN(TOKEN).getMarketPrice() / output));
-        minOutput = input * slippageTolerance / DIVISOR;
-        autoMinOutput = input * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
-    }
-
-    function quoteSellIn(uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 feeTOKEN = input * FEE / DIVISOR;
-        uint256 oldMrTOKEN = ITOKEN(TOKEN).mrrTOKEN();
-        uint256 newMrTOKEN = oldMrTOKEN + input - feeTOKEN;
-        if (newMrTOKEN > ITOKEN(TOKEN).mrvBASE()) {
-            return (0, 0, 0, 0);
-        }
-
-        uint256 oldMrBASE = ITOKEN(TOKEN).mrvBASE() + ITOKEN(TOKEN).mrrBASE();
-        output = oldMrBASE - (oldMrBASE * oldMrTOKEN / newMrTOKEN);
-        slippage = 100 * (1e18 - (output * 1e18 / (input * ITOKEN(TOKEN).getMarketPrice() / 1e18)));
-        minOutput = input * ITOKEN(TOKEN).getMarketPrice() /1e18 * slippageTolerance / DIVISOR;
-        autoMinOutput = input * ITOKEN(TOKEN).getMarketPrice() /1e18 * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
-    }
-
-    function quoteSellOut(uint256 input, uint256 slippageTolerance) external view returns (uint256 output, uint256 slippage, uint256 minOutput, uint256 autoMinOutput) {
-        uint256 oldMrBASE = ITOKEN(TOKEN).mrvBASE() + ITOKEN(TOKEN).mrrBASE();
-        output = DIVISOR * ((oldMrBASE * ITOKEN(TOKEN).mrrTOKEN() / (oldMrBASE - input)) - ITOKEN(TOKEN).mrrTOKEN()) / (DIVISOR - FEE);
-        if (output.mulDivDown(DIVISOR - FEE, DIVISOR) + ITOKEN(TOKEN).mrrTOKEN() > ITOKEN(TOKEN).mrvBASE()) {
-            return (0, 0, 0, 0);
-        }
-        slippage = 100 * (1e18 - (input * 1e18 / (output * ITOKEN(TOKEN).getMarketPrice() / 1e18)));
-        minOutput = input * slippageTolerance / DIVISOR;
-        autoMinOutput = input * ((DIVISOR * 1e18) - ((slippage + 1e18) * 100)) / (DIVISOR * 1e18);
-    }
-
-    function portfolioData(address account) external view returns (Portfolio memory portfolio) {
-        uint256 priceBASE = getBasePrice();
-
-        portfolio.total = (account == address(0) ? 0 : priceBASE * (((IERC20(TOKEN).balanceOf(account) 
-            + IVTOKEN(VTOKEN).balanceOfTOKEN(account)) * ITOKEN(TOKEN).getMarketPrice() / 1e18)
-            + (IERC20(OTOKEN).balanceOf(account) * ITOKEN(TOKEN).getOTokenPrice() / 1e18)
-            - ITOKEN(TOKEN).debts(account)) / 1e18);
-
-        portfolio.stakingRewards = (account == address(0) ? 0 : priceBASE * (IVTOKENRewarder(rewarder).getRewardForDuration(BASE)
-            + (IVTOKENRewarder(rewarder).getRewardForDuration(TOKEN) * ITOKEN(TOKEN).getMarketPrice() / 1e18)
-            + (IVTOKENRewarder(rewarder).getRewardForDuration(OTOKEN) * ITOKEN(TOKEN).getOTokenPrice() / 1e18)) / 1e18
-            * IERC20(VTOKEN).balanceOf(account) / IERC20(VTOKEN).totalSupply());
-        
-        return portfolio;
     }
 
 }
