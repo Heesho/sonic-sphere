@@ -97,7 +97,7 @@ async function getContracts() {
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0xaF978175A9F0f7361e8c088902EFF8f1e6a48911"
+    "0x21145bbB5E1001b6A173618866D31b9f34938A79"
   );
 
   wS = await ethers.getContractAt(
@@ -1050,9 +1050,9 @@ async function main() {
   //===================================================================
 
   // console.log("Starting Ancillary Verification");
-  await verifyMulticall();
+  // await verifyMulticall();
   // await verifyController();
-  await verifyRouter();
+  // await verifyRouter();
   // console.log("Ancillary Contracts Verified");
 
   //===================================================================

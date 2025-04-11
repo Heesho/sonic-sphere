@@ -1248,4 +1248,55 @@ describe("lpPluginTest", function () {
     expect(rewardAuctionData.auctionPriceMultiplier).to.equal(two); // Assuming multiplier is 2
     expect(rewardAuctionData.auctionMinInitPrice).to.equal(ten); // Assuming min init price is 10
   });
+
+  it("Test zero amount deposit in Plugin", async function () {
+    console.log("******************************************************");
+    console.log("Testing zero amount deposit in Plugin");
+    console.log();
+
+    // Try to deposit 0 LP tokens
+    const zeroAmount = ethers.BigNumber.from("0");
+    await LP0.mint(user1.address, oneHundred); // Mint some tokens first
+    await LP0.connect(user1).approve(plugin0.address, zeroAmount);
+
+    // Try the deposit with amount = 0
+    try {
+      await plugin0.connect(user1).deposit(zeroAmount);
+      console.log("Zero amount deposit succeeded");
+    } catch (error) {
+      console.log("Zero amount deposit failed with error:", error.message);
+      // Check if it's a revert from ERC20 safeTransferFrom
+      expect(error.message).to.include(
+        "ERC20: transfer amount must be greater than zero"
+      );
+    }
+
+    // Verify no state changes occurred
+    const pluginBalance = await LP0.balanceOf(plugin0.address);
+    const userBalance = await LP0.balanceOf(user1.address);
+
+    console.log("\nPost-attempt state:");
+    console.log(
+      "- Plugin LP0 balance:",
+      ethers.utils.formatUnits(pluginBalance, 18)
+    );
+    console.log(
+      "- User LP0 balance:",
+      ethers.utils.formatUnits(userBalance, 18)
+    );
+
+    // Verify a normal deposit still works
+    await LP0.connect(user1).approve(plugin0.address, oneHundred);
+    await plugin0.connect(user1).deposit(oneHundred);
+
+    console.log("\nAfter normal deposit:");
+    console.log(
+      "- Plugin LP0 balance:",
+      ethers.utils.formatUnits(await LP0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
+      "- User LP0 balance:",
+      ethers.utils.formatUnits(await LP0.balanceOf(user1.address), 18)
+    );
+  });
 });

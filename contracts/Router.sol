@@ -18,6 +18,7 @@ interface IVoter {
 }
 
 interface IPlugin {
+    function getTvl() external view returns (uint256);
     function getAssetAuction() external view returns (address);
     function getRewardTokens() external view returns (address[] memory);
     function claim() external;
@@ -111,8 +112,10 @@ contract Router {
         for (uint256 i = 0; i < plugins.length; i++) {
             address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
             assetsLength += rewardTokens.length;
-            IPlugin(plugins[i]).claim();
-            IPlugin(plugins[i]).distribute(rewardTokens);
+            if (IPlugin(plugins[i]).getTvl() > 0) {
+                IPlugin(plugins[i]).claim();
+                IPlugin(plugins[i]).distribute(rewardTokens);
+            }
         }
         address[] memory assets = new address[](assetsLength);
         uint256 index = 0;
