@@ -89,7 +89,7 @@ async function getContracts() {
 
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x61C9e5478667633456c150Ea84bC0C4E6eBe0d40"
+    "0x3f7Dc3492659659420e9c92D7283Cb761C328a23"
   );
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
@@ -1050,7 +1050,7 @@ async function main() {
   //===================================================================
 
   // console.log("Starting Ancillary Verification");
-  // await verifyMulticall();
+  await verifyMulticall();
   // await verifyController();
   // await verifyRouter();
   // console.log("Ancillary Contracts Verified");

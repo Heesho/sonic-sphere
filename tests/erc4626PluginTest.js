@@ -313,7 +313,10 @@ describe("erc4626PluginTest", function () {
     console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
 
     // Get updated plugin data
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nUpdated Plugin Details:");
     console.log(
       "- Voting Weight:",
@@ -545,7 +548,10 @@ describe("erc4626PluginTest", function () {
     console.log("Testing plugin0 parameters via multicall");
     console.log();
 
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
 
     console.log("Plugin Details:");
     console.log("- Name:", pluginCard.name);
@@ -616,7 +622,10 @@ describe("erc4626PluginTest", function () {
     console.log("Testing plugin0 parameters via multicall");
     console.log();
 
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
 
     console.log("Plugin Details:");
     console.log("- Name:", pluginCard.name);
@@ -680,7 +689,10 @@ describe("erc4626PluginTest", function () {
     await gauge0.getReward(plugin0.address);
 
     // Get auction details before purchase
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     auction0 = await ethers.getContractAt("Auction", pluginCard.assetAuction);
     const currentPrice = await auction0.getPrice();
     const currentEpoch = (await auction0.getSlot0()).epochId;
@@ -713,7 +725,10 @@ describe("erc4626PluginTest", function () {
     );
 
     // Get post-purchase state
-    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    const postPluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nPost-Purchase Auction State:");
     console.log(
       "- Current Price:",
@@ -751,7 +766,10 @@ describe("erc4626PluginTest", function () {
     await plugin0.connect(user2).distribute([OTOKEN.address]);
 
     // Get auction details before purchase
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     const currentPrice = await auction0.getPrice();
     const currentEpoch = (await auction0.getSlot0()).epochId;
 
@@ -797,7 +815,10 @@ describe("erc4626PluginTest", function () {
       );
 
     // Get post-purchase state
-    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    const postPluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nPost-Purchase Auction State:");
     console.log(
       "- Current Price:",
@@ -921,7 +942,10 @@ describe("erc4626PluginTest", function () {
     await network.provider.send("evm_mine");
 
     // Get auction details before purchase
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     const currentPrice = await auction0.getPrice();
     const currentEpoch = (await auction0.getSlot0()).epochId;
 
@@ -956,7 +980,10 @@ describe("erc4626PluginTest", function () {
       );
 
     // Get post-purchase state
-    const postPluginCard = await multicall.pluginCardData(plugin0.address);
+    const postPluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nPost-Purchase Auction State:");
     console.log(
       "- New Price:",

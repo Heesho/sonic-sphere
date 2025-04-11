@@ -319,7 +319,10 @@ describe("farmPluginTest", function () {
     console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
 
     // Get updated plugin data
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nUpdated Plugin Details:");
     console.log(
       "- Voting Weight:",
@@ -369,7 +372,10 @@ describe("farmPluginTest", function () {
     console.log("Testing plugin0 parameters via multicall");
     console.log();
 
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
 
     console.log("Plugin Details:");
     console.log("- Name:", pluginCard.name);

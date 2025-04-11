@@ -161,6 +161,7 @@ contract Multicall {
         uint256 auctionStartTime;
         uint256 auctionPrice;
         uint256 offeredOTOKEN;
+        uint256 accountBalance;
     }
 
     struct RewardAuction {
@@ -173,6 +174,7 @@ contract Multicall {
         uint256 auctionInitPrice;
         uint256 auctionStartTime;
         uint256 auctionPrice;
+        uint256 accountBalance;
     }
 
     struct BribeCard {
@@ -271,7 +273,7 @@ contract Multicall {
         return bondingCurve;
     }
 
-    function pluginCardData(address plugin) public view returns (PluginCard memory pluginCard) {
+    function pluginCardData(address plugin, address account) public view returns (PluginCard memory pluginCard) {
         pluginCard.name = IPlugin(plugin).name();
         pluginCard.plugin = plugin;
         pluginCard.asset = IPlugin(plugin).asset();
@@ -300,10 +302,12 @@ contract Multicall {
             + IERC20(OTOKEN).balanceOf(pluginCard.plugin) 
             + IGauge(pluginCard.gauge).earned(pluginCard.plugin, OTOKEN);
 
+        pluginCard.accountBalance = (account == address(0) ? 0 : IERC20(pluginCard.asset).balanceOf(account));
+
         return pluginCard;
     }
 
-    function rewardAuctionData() public view returns (RewardAuction memory rewardAuction) {
+    function rewardAuctionData(address account) public view returns (RewardAuction memory rewardAuction) {
         address[] memory plugins = IVoter(voter).getPlugins();
         uint256 assetsLength = 0;
         for (uint i = 0; i < plugins.length; i++) {
@@ -328,6 +332,7 @@ contract Multicall {
         rewardAuction.auctionInitPrice = slot0.initPrice;
         rewardAuction.auctionStartTime = slot0.startTime;
         rewardAuction.auctionPrice = IAuction(auction).getPrice();
+        rewardAuction.accountBalance = (account == address(0) ? 0 : IERC20(TOKEN).balanceOf(account));
 
         return rewardAuction;
     }
@@ -388,10 +393,10 @@ contract Multicall {
         return portfolio;
     }
 
-    function getPluginCards(uint256 start, uint256 stop) external view returns (PluginCard[] memory) {
+    function getPluginCards(uint256 start, uint256 stop, address account) external view returns (PluginCard[] memory) {
         PluginCard[] memory pluginCards = new PluginCard[](stop - start);
         for (uint i = start; i < stop; i++) {
-            pluginCards[i] = pluginCardData(getPlugin(i));
+            pluginCards[i] = pluginCardData(getPlugin(i), account);
         }
         return pluginCards;
     }

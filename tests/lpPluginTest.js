@@ -318,7 +318,10 @@ describe("lpPluginTest", function () {
     console.log("Voting weight:", ethers.utils.formatUnits(weight, 18));
 
     // Get updated plugin data
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
     console.log("\nUpdated Plugin Details:");
     console.log(
       "- Voting Weight:",
@@ -614,7 +617,10 @@ describe("lpPluginTest", function () {
     console.log("Testing plugin parameters via multicall");
     console.log();
 
-    const pluginCard = await multicall.pluginCardData(plugin0.address);
+    const pluginCard = await multicall.pluginCardData(
+      plugin0.address,
+      user0.address
+    );
 
     console.log("Plugin Details:");
     console.log("- Name:", pluginCard.name);
@@ -1202,7 +1208,7 @@ describe("lpPluginTest", function () {
     console.log();
 
     // Call the rewardAuctionData function
-    const rewardAuctionData = await multicall.rewardAuctionData();
+    const rewardAuctionData = await multicall.rewardAuctionData(user0.address);
 
     // Log the retrieved data
     console.log("Reward Auction Data:");
