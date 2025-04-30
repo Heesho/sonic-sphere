@@ -48,6 +48,7 @@ contract VTOKENRewarder is ReentrancyGuard {
 
     error VTOKENRewarder__NotAuthorizedVTOKEN();
     error VTOKENRewarder__RewardSmallerThanDuration();
+    error VTOKENRewarder__RewardSmallerThanLeft();
     error VTOKENRewarder__NotRewardToken();
     error VTOKENRewarder__RewardTokenAlreadyAdded();
 
@@ -125,6 +126,7 @@ contract VTOKENRewarder is ReentrancyGuard {
         updateReward(address(0)) 
     {
         if (reward < DURATION) revert VTOKENRewarder__RewardSmallerThanDuration();
+        if (reward < left(_rewardsToken)) revert VTOKENRewarder__RewardSmallerThanLeft();
         if (!isRewardToken[_rewardsToken]) revert VTOKENRewarder__NotRewardToken();
 
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
@@ -190,7 +192,7 @@ contract VTOKENRewarder is ReentrancyGuard {
 
     /*----------  VIEW FUNCTIONS  ---------------------------------------*/
 
-    function left(address _rewardsToken) external view returns (uint256 leftover) {
+    function left(address _rewardsToken) public view returns (uint256 leftover) {
         if (block.timestamp >= rewardData[_rewardsToken].periodFinish) return 0;
         uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
         return remaining * rewardData[_rewardsToken].rewardRate;

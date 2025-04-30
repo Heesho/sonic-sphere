@@ -308,7 +308,13 @@ describe("test3", function () {
   it("User0 Buys TOKEN with 10 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, ten);
-    await TOKEN.connect(user0).buy(ten, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      ten,
+      1,
+      1792282187,
+      user0.address,
+      treasury.address
+    );
   });
 
   it("BondingCurveData, user1", async function () {
@@ -372,7 +378,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1892282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -423,7 +430,8 @@ describe("test3", function () {
       res.output,
       res.minOutput,
       1792282187,
-      user0.address
+      user0.address,
+      AddressZero
     );
   });
 
@@ -474,7 +482,8 @@ describe("test3", function () {
       res.output,
       res.minOutput,
       1892282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -526,7 +535,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user0.address),
       1,
       1892282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -590,7 +600,13 @@ describe("test3", function () {
   it("User0 Buys TOKEN with 20 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user0).buy(twenty, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      twenty,
+      1,
+      1792282187,
+      user0.address,
+      treasury.address
+    );
   });
 
   it("BondingCurveData, user0", async function () {
@@ -641,7 +657,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user0.address),
       1,
       1892282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -756,7 +773,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 10 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, ten);
-    await TOKEN.connect(user1).buy(ten, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      ten,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("BondingCurveData, user1", async function () {
@@ -807,7 +830,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user1.address),
       1,
       1892282187,
-      user1.address
+      user1.address,
+      treasury.address
     );
   });
 
@@ -947,7 +971,13 @@ describe("test3", function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).approve(TOKEN.address, twenty);
     await expect(
-      TOKEN.connect(user0).sell(twenty, 1, 1792282187, user0.address)
+      TOKEN.connect(user0).sell(
+        twenty,
+        1,
+        1792282187,
+        user0.address,
+        treasury.address
+      )
     ).to.be.revertedWith("TOKEN__ExceedsSwapMarketReserves");
   });
 
@@ -958,7 +988,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1024,7 +1055,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, one);
-    await TOKEN.connect(user1).buy(one, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      one,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User0 sells max", async function () {
@@ -1034,7 +1071,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1068,7 +1106,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, one);
-    await TOKEN.connect(user1).buy(one, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      one,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User0 sells max", async function () {
@@ -1078,7 +1122,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1112,7 +1157,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, one);
-    await TOKEN.connect(user1).buy(one, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      one,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User0 sells max", async function () {
@@ -1122,7 +1173,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1164,7 +1216,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, one);
-    await TOKEN.connect(user1).buy(one, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      one,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User0 sells max", async function () {
@@ -1174,7 +1232,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1208,7 +1267,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, one);
-    await TOKEN.connect(user1).buy(one, 1, 1892282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      one,
+      1,
+      1892282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User0 sells max", async function () {
@@ -1218,7 +1283,8 @@ describe("test3", function () {
       await TOKEN.getMaxSell(),
       1,
       1792282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 
@@ -1469,7 +1535,13 @@ describe("test3", function () {
   it("User0 Buys TOKEN with 20 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user0).buy(twenty, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      twenty,
+      1,
+      1792282187,
+      user0.address,
+      treasury.address
+    );
   });
 
   it("User0 stakes 10 TOKEN", async function () {
@@ -1481,7 +1553,13 @@ describe("test3", function () {
   it("User1 Buys TOKEN with 20 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user1).buy(twenty, 1, 1792282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      twenty,
+      1,
+      1792282187,
+      user1.address,
+      treasury.address
+    );
   });
 
   it("User1 stakes 5 TOKEN", async function () {
@@ -1635,7 +1713,13 @@ describe("test3", function () {
   it("User2 Buys TOKEN with 20 ETH", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user2).buy(twenty, 1, 1892282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      twenty,
+      1,
+      1892282187,
+      user2.address,
+      treasury.address
+    );
   });
 
   it("User2 sells all TOKEN", async function () {
@@ -1648,7 +1732,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user2.address),
       1,
       1792282187,
-      user2.address
+      user2.address,
+      treasury.address
     );
   });
 
@@ -1666,7 +1751,13 @@ describe("test3", function () {
   it("User2 Buys TOKEN with 20 ETH", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user2).buy(twenty, 1, 1892282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      twenty,
+      1,
+      1892282187,
+      user2.address,
+      treasury.address
+    );
   });
 
   it("User2 sells all TOKEN", async function () {
@@ -1679,7 +1770,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user2.address),
       1,
       1792282187,
-      user2.address
+      user2.address,
+      treasury.address
     );
   });
 
@@ -1770,7 +1862,13 @@ describe("test3", function () {
   it("User2 Buys TOKEN with 20 ETH", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user2).buy(twenty, 1, 1892282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      twenty,
+      1,
+      1892282187,
+      user2.address,
+      treasury.address
+    );
   });
 
   it("User2 sells all TOKEN", async function () {
@@ -1783,7 +1881,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user2.address),
       1,
       1792282187,
-      user2.address
+      user2.address,
+      treasury.address
     );
   });
 
@@ -1914,7 +2013,13 @@ describe("test3", function () {
   it("User2 Buys TOKEN with 10 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, ten);
-    await TOKEN.connect(user2).buy(ten, 1, 1792282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      ten,
+      1,
+      1792282187,
+      user2.address,
+      treasury.address
+    );
   });
 
   it("User2 stakes all TOKEN", async function () {
@@ -2011,7 +2116,13 @@ describe("test3", function () {
   it("User2 Buys TOKEN with 20 ETH", async function () {
     console.log("******************************************************");
     await BASE.connect(user2).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user2).buy(twenty, 1, 1892282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      twenty,
+      1,
+      1892282187,
+      user2.address,
+      treasury.address
+    );
   });
 
   it("User2 sells all TOKEN", async function () {
@@ -2024,7 +2135,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user2.address),
       1,
       1792282187,
-      user2.address
+      user2.address,
+      treasury.address
     );
   });
 
@@ -2428,27 +2540,51 @@ describe("test3", function () {
     await TOKEN.getMarketPrice();
     await TOKEN.getFloorPrice();
     await expect(
-      TOKEN.connect(user1).buy(ten, 1, 10, user1.address)
+      TOKEN.connect(user1).buy(ten, 1, 10, user1.address, treasury.address)
     ).to.be.revertedWith("TOKEN__SwapExpired");
     await expect(
-      TOKEN.connect(user1).sell(ten, 1, 10, user1.address)
+      TOKEN.connect(user1).sell(ten, 1, 10, user1.address, treasury.address)
     ).to.be.revertedWith("TOKEN__SwapExpired");
     await expect(
-      TOKEN.connect(user1).buy(ten, ten, 1792282187, user1.address)
+      TOKEN.connect(user1).buy(
+        ten,
+        ten,
+        1792282187,
+        user1.address,
+        treasury.address
+      )
     ).to.be.revertedWith("TOKEN__ExceedsSwapSlippageTolerance");
     await BASE.connect(user1).approve(TOKEN.address, ten);
-    await TOKEN.connect(user1).buy(ten, 0, 1792282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      ten,
+      0,
+      1792282187,
+      user1.address,
+      treasury.address
+    );
     await expect(
-      TOKEN.connect(user1).sell(oneThousand, 0, 1792282187, user1.address)
+      TOKEN.connect(user1).sell(
+        oneThousand,
+        0,
+        1792282187,
+        user1.address,
+        treasury.address
+      )
     ).to.be.revertedWith("TOKEN__ExceedsSwapMarketReserves");
     await expect(
-      TOKEN.connect(user1).sell(five, ten, 1792282187, user1.address)
+      TOKEN.connect(user1).sell(
+        five,
+        ten,
+        1792282187,
+        user1.address,
+        treasury.address
+      )
     ).to.be.revertedWith("TOKEN__ExceedsSwapSlippageTolerance");
     await expect(
-      TOKEN.connect(user1).buy(0, 0, 0, user1.address)
+      TOKEN.connect(user1).buy(0, 0, 0, user1.address, treasury.address)
     ).to.be.revertedWith("TOKEN__InvalidZeroInput");
     await expect(
-      TOKEN.connect(user1).sell(0, 0, 0, user1.address)
+      TOKEN.connect(user1).sell(0, 0, 0, user1.address, treasury.address)
     ).to.be.revertedWith("TOKEN__InvalidZeroInput");
     await expect(
       TOKEN.connect(user1).exercise(0, user1.address)
@@ -2534,7 +2670,13 @@ describe("test3", function () {
   it("User0 Buys TOKEN with 20 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, twenty);
-    await TOKEN.connect(user0).buy(twenty, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      twenty,
+      1,
+      1792282187,
+      user0.address,
+      treasury.address
+    );
   });
 
   it("User0 stakes all TOKEN", async function () {
@@ -2738,7 +2880,8 @@ describe("test3", function () {
       await TOKEN.balanceOf(user0.address),
       1,
       1892282187,
-      user0.address
+      user0.address,
+      treasury.address
     );
   });
 

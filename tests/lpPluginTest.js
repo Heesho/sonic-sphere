@@ -295,7 +295,13 @@ describe("lpPluginTest", function () {
 
     // Purchase TOKEN
     console.log("Purchasing TOKEN...");
-    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user0.address,
+      AddressZero
+    );
     const tokenBalance = await TOKEN.balanceOf(user0.address);
     console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
 
@@ -694,7 +700,13 @@ describe("lpPluginTest", function () {
     const baseAmount = oneThousand;
     await BASE.mint(user2.address, baseAmount);
     await BASE.connect(user2).approve(TOKEN.address, baseAmount);
-    await TOKEN.connect(user2).buy(baseAmount, 1, 1792282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user2.address,
+      AddressZero
+    );
     await TOKEN.connect(user2).approve(rewardAuction.address, currentPrice);
 
     // Buy from reward auction at new price
@@ -760,7 +772,13 @@ describe("lpPluginTest", function () {
     const baseAmount = oneThousand;
     await BASE.mint(user1.address, baseAmount);
     await BASE.connect(user1).approve(TOKEN.address, baseAmount);
-    await TOKEN.connect(user1).buy(baseAmount, 1, 1792282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user1.address,
+      AddressZero
+    );
     await TOKEN.connect(user1).approve(rewardAuction.address, firstPrice);
 
     await rewardAuction
@@ -797,7 +815,13 @@ describe("lpPluginTest", function () {
     // Second buyer
     await BASE.mint(user2.address, baseAmount);
     await BASE.connect(user2).approve(TOKEN.address, baseAmount);
-    await TOKEN.connect(user2).buy(baseAmount, 1, 1792282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user2.address,
+      treasury.address
+    );
     await TOKEN.connect(user2).approve(rewardAuction.address, secondPrice);
 
     await rewardAuction
@@ -934,7 +958,13 @@ describe("lpPluginTest", function () {
     const baseAmount = oneThousand.mul(100);
     await BASE.mint(user2.address, baseAmount);
     await BASE.connect(user2).approve(TOKEN.address, baseAmount);
-    await TOKEN.connect(user2).buy(baseAmount, 1, 1792282187, user2.address);
+    await TOKEN.connect(user2).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user2.address,
+      AddressZero
+    );
 
     // Approve router (not rewardAuction)
     const tokenBalance = await TOKEN.balanceOf(user2.address);
@@ -1152,7 +1182,13 @@ describe("lpPluginTest", function () {
     const baseAmount = oneThousand.mul(200); // Increased amount further
     await BASE.mint(user1.address, baseAmount);
     await BASE.connect(user1).approve(TOKEN.address, baseAmount);
-    await TOKEN.connect(user1).buy(baseAmount, 1, 1792282187, user1.address);
+    await TOKEN.connect(user1).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user1.address,
+      AddressZero
+    );
 
     // Check TOKEN balance and approve
     const tokenBalance = await TOKEN.balanceOf(user1.address);

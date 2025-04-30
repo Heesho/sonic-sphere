@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IVTOKENRewarder {
+    function left(address _rewardsToken) external view returns (uint256 leftover);
     function notifyRewardAmount(address token, uint256 amount) external;
 }
 
@@ -66,7 +67,8 @@ contract TOKENFees {
      */
     function distributeBASE() public {
         uint256 balanceBASE = BASE.balanceOf(address(this));
-        if (balanceBASE >= DURATION) {
+        uint256 left = IVTOKENRewarder(rewarder).left(address(BASE));
+        if (balanceBASE >= left && balanceBASE >= DURATION) {
             emit TOKENFees__DistributedBASE(balanceBASE);
             BASE.safeApprove(rewarder, 0);
             BASE.safeApprove(rewarder, balanceBASE);
@@ -79,7 +81,8 @@ contract TOKENFees {
      */
     function distributeTOKEN() public {
         uint256 balanceTOKEN = TOKEN.balanceOf(address(this));
-        if (balanceTOKEN >= DURATION) {
+        uint256 left = IVTOKENRewarder(rewarder).left(address(TOKEN));
+        if (balanceTOKEN >= left && balanceTOKEN >= DURATION) {
             emit TOKENFees__DistributedTOKEN(balanceTOKEN);
             TOKEN.safeApprove(rewarder, 0);
             TOKEN.safeApprove(rewarder, balanceTOKEN);
@@ -92,7 +95,8 @@ contract TOKENFees {
      */
     function distributeOTOKEN() public {
         uint256 balanceOTOKEN = OTOKEN.balanceOf(address(this));
-        if (balanceOTOKEN >= DURATION) {
+        uint256 left = IVTOKENRewarder(rewarder).left(address(OTOKEN));
+        if (balanceOTOKEN >= left && balanceOTOKEN >= DURATION) {
             emit TOKENFees__DistributedOTOKEN(balanceOTOKEN);
             OTOKEN.safeApprove(rewarder, 0);
             OTOKEN.safeApprove(rewarder, balanceOTOKEN);

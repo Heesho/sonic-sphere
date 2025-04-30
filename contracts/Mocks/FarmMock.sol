@@ -5,6 +5,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+interface IERC20Mock {
+    function mint(address to, uint256 amount) external;
+}
+
 contract FarmMock is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -38,7 +42,7 @@ contract FarmMock is ReentrancyGuard {
 
     function getReward(address account) external nonReentrant {
         if (_balanceOf[account] > 0) {
-            rewardToken.safeTransfer(account, REWARD_AMOUNT);
+            IERC20Mock(address(rewardToken)).mint(account, REWARD_AMOUNT);
         }
     }
 

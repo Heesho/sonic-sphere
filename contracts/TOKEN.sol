@@ -78,8 +78,9 @@ contract TOKEN is ERC20, ReentrancyGuard {
     string internal constant NAME = 'SonicSphere';  // Name of TOKEN
     string internal constant SYMBOL = 'SPHERE';     // Symbol of TOKEN
 
-    uint256 public constant SWAP_FEE = 30;      // Swap fee: buy, sell
-    uint256 public constant BORROW_FEE = 250;      // borrow fee
+    uint256 public constant SWAP_FEE = 30;          // Swap fee: buy, sell
+    uint256 public constant BORROW_FEE = 250;       // borrow fee
+    uint256 public constant PROVIDER_FEE = 2000;    // Fee for the UI hosting provider
 
     /*===========================  END SETTINGS  ========================*/
     /*===================================================================*/
@@ -121,8 +122,8 @@ contract TOKEN is ERC20, ReentrancyGuard {
 
     /*----------  EVENTS ------------------------------------------------*/
 
-    event TOKEN__Buy(address indexed account, address indexed to, uint256 amount);
-    event TOKEN__Sell(address indexed account, address indexed to, uint256 amount);
+    event TOKEN__Buy(address indexed account, address indexed to, address indexed provider, uint256 amountIn, uint256 amountOut);
+    event TOKEN__Sell(address indexed account, address indexed to, address indexed provider, uint256 amountIn, uint256 amountOut);
     event TOKEN__Exercise(address indexed account, address indexed to, uint256 amount);
     event TOKEN__Redeem(address indexed account, address indexed to, uint256 amount);
     event TOKEN__Borrow(address indexed account, uint256 amount);
@@ -187,9 +188,10 @@ contract TOKEN is ERC20, ReentrancyGuard {
      * @param minToken Minimum amount of TOKEN to receive, reverts when outTOKEN < minToken
      * @param expireTimestamp Expiration timestamp of the swap, reverts when block.timestamp > expireTimestamp
      * @param toAccount Account address to receive TOKEN
+     * @param provider Address of the provider, if 0, the provider fee is not applied
      * @return bool true=success, otherwise false
      */
-    function buy(uint256 amountBase, uint256 minToken, uint256 expireTimestamp, address toAccount) 
+    function buy(uint256 amountBase, uint256 minToken, uint256 expireTimestamp, address toAccount, address provider)
         external
         nonReentrant
         nonZeroInput(amountBase)
@@ -206,9 +208,15 @@ contract TOKEN is ERC20, ReentrancyGuard {
         mrrBASE = newMrBASE - mrvBASE;
         mrrTOKEN = newMrTOKEN;
 
-        emit TOKEN__Buy(msg.sender, toAccount, amountBase);
+        emit TOKEN__Buy(msg.sender, toAccount, provider, amountBase, outTOKEN);
 
-        BASE.safeTransferFrom(msg.sender, FEES, feeBASE);
+        if (provider != address(0)) {
+            uint256 providerFee = feeBASE * PROVIDER_FEE / DIVISOR;
+            BASE.safeTransferFrom(msg.sender, provider, providerFee);
+            BASE.safeTransferFrom(msg.sender, FEES, feeBASE - providerFee);
+        } else {
+            BASE.safeTransferFrom(msg.sender, FEES, feeBASE);
+        }
         IERC20(BASE).safeTransferFrom(msg.sender, address(this), amountBase - feeBASE);
         _mint(toAccount, outTOKEN);
         return true;
@@ -220,9 +228,10 @@ contract TOKEN is ERC20, ReentrancyGuard {
      * @param minBase Minimum amount of BASE to receive, reverts when outBase < minBase
      * @param expireTimestamp Expiration timestamp of the swap, reverts when block.timestamp > expireTimestamp
      * @param toAccount Account address to receive BASE
+     * @param provider Address of the provider, if 0, the provider fee is not applied
      * @return bool true=success, otherwise false
      */
-    function sell(uint256 amountToken, uint256 minBase, uint256 expireTimestamp, address toAccount)
+    function sell(uint256 amountToken, uint256 minBase, uint256 expireTimestamp, address toAccount, address provider)
         external
         nonReentrant
         nonZeroInput(amountToken)
@@ -240,9 +249,15 @@ contract TOKEN is ERC20, ReentrancyGuard {
         mrrBASE = newMrBASE - mrvBASE;
         mrrTOKEN = newMrTOKEN;
 
-        emit TOKEN__Sell(msg.sender, toAccount, amountToken);
+        emit TOKEN__Sell(msg.sender, toAccount, provider, amountToken, outBASE);
 
-        IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN);
+        if (provider != address(0)) {
+            uint256 providerFee = feeTOKEN * PROVIDER_FEE / DIVISOR;
+            IERC20(address(this)).transferFrom(msg.sender, provider, providerFee);
+            IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN - providerFee);
+        } else {
+            IERC20(address(this)).transferFrom(msg.sender, FEES, feeTOKEN);
+        }
         _burn(msg.sender, amountToken - feeTOKEN); 
         BASE.safeTransfer(toAccount, outBASE);
         return true;

@@ -10,6 +10,7 @@ const one = convert("1", 18);
 const two = convert("2", 18);
 const ten = convert("10", 18);
 const oneHundred = convert("100", 18);
+const addressZero = "0x0000000000000000000000000000000000000000";
 
 const MARKET_RESERVES = "10000000"; // 10,000,000 TOKEN in market reserves
 
@@ -21,11 +22,11 @@ let TOKEN, OTOKEN, VTOKEN, fees, rewarder;
 let voter, minter, gaugeFactory, bribeFactory, auctionFactory, rewardAuction;
 let multicall, controller, router;
 
-let wS, USDC, SWPX; // erc20
+let wS, SHADOW, SWPX; // erc20
 let stS; // erc4626
-let wS_USDC_lp; // lp
-let wS_oS_lp; // erc20
-let wS_oS_lp_farm; // farm
+let wS_SHADOW_lp; // lp
+let wS_SWPX_lp; // erc20
+let wS_SWPX_lp_farm; // farm
 
 let erc4626PluginFactory, erc4626Plugin;
 let lpPluginFactory, lpPlugin;
@@ -93,7 +94,7 @@ async function getContracts() {
   );
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
-    "0xbBc46f6DBB199c85CCa67aD06C4D4949d09caFc3"
+    "0xE259A689D13139F413eE693BE27181192319a629"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
@@ -104,9 +105,9 @@ async function getContracts() {
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
     "0x9C751E6825EDAa55007160b99933846f6ECeEc9B"
   );
-  USDC = await ethers.getContractAt(
+  SHADOW = await ethers.getContractAt(
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
-    "0xa80Dd07aA0b220a31569Bd50E1398BCE8d35B85C"
+    "0x5C73DAC52B811A67ec63B0CF775fBbE9EE3600Dc"
   );
   SWPX = await ethers.getContractAt(
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
@@ -118,19 +119,19 @@ async function getContracts() {
     "0xA8Bfa9485B3253144e33892128C7A4eFef297FD6"
   );
 
-  wS_USDC_lp = await ethers.getContractAt(
+  wS_SHADOW_lp = await ethers.getContractAt(
     "contracts/Mocks/LPMock.sol:LPMock",
-    "0xC6966Cf3aEFA8668A1010f000a611770061bec48"
+    "0x0a8911FE8891038e1696b5f47b44725EBEBF56cc"
   );
 
-  wS_oS_lp = await ethers.getContractAt(
+  wS_SWPX_lp = await ethers.getContractAt(
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
-    "0x46f8fb6ca3471a230D5aD8f5dDbF691fE43870e0"
+    "0xC3205423b701538f4443A98B2Ac118F87942eC8F"
   );
 
-  wS_oS_lp_farm = await ethers.getContractAt(
+  wS_SWPX_lp_farm = await ethers.getContractAt(
     "contracts/Mocks/FarmMock.sol:FarmMock",
-    "0x1d3969836767A75b09E15F8588b58624b7df4044"
+    "0x06E67d7A3671d7B6Fc97f60fD7C410B4748E7679"
   );
 
   auctionFactory = await ethers.getContractAt(
@@ -150,7 +151,7 @@ async function getContracts() {
 
   erc4626Plugin = await ethers.getContractAt(
     "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626Plugin",
-    "0x33e8D17ff60778E2877442Cc312EB1bc7B7C13b8"
+    "0xec2c7DD745c1459f545E67b473E0B7986eea868f"
   );
 
   lpPluginFactory = await ethers.getContractAt(
@@ -160,7 +161,7 @@ async function getContracts() {
 
   lpPlugin = await ethers.getContractAt(
     "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
-    "0x003b854Ad473115Fb0E8da4eBCc0807a03c1580D"
+    "0xf364735da9864489bCf45dad10F01962781a6301"
   );
 
   farmPluginFactory = await ethers.getContractAt(
@@ -170,7 +171,7 @@ async function getContracts() {
 
   farmPlugin = await ethers.getContractAt(
     "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
-    "0x6c78EEfB7AF0b0AeBF355ffb96F422a47C8f7360"
+    "0x81525c1e712e9c2c3B076fBb492F8bb08C1dA7DB"
   );
 
   console.log("Contracts Retrieved");
@@ -182,15 +183,15 @@ async function deployERC20() {
   wS = await ERC20MockArtifact.deploy("wS", "wS");
   await sleep(5000);
   console.log("wS Deployed at:", wS.address);
-  USDC = await ERC20MockArtifact.deploy("USD Coin", "USDC");
+  SHADOW = await ERC20MockArtifact.deploy("SHADOW", "SHADOW");
   await sleep(5000);
-  console.log("USDC Deployed at:", USDC.address);
+  console.log("SHADOW Deployed at:", SHADOW.address);
   SWPX = await ERC20MockArtifact.deploy("SWPX", "SWPX");
   await sleep(5000);
   console.log("SWPX Deployed at:", SWPX.address);
-  wS_oS_lp = await ERC20MockArtifact.deploy("sAMM-wS/oS", "sAMM-wS/oS");
+  wS_SWPX_lp = await ERC20MockArtifact.deploy("vAMM-wS/SWPX", "vAMM-wS/SWPX");
   await sleep(5000);
-  console.log("SwapX sAMM-wS/oS Deployed at:", wS_oS_lp.address);
+  console.log("SwapX vAMM-wS/SWPX Deployed at:", wS_SWPX_lp.address);
   console.log("ERC20s Deployed");
 }
 
@@ -225,14 +226,14 @@ async function verifyERC4626() {
 async function deployLP() {
   console.log("Starting LP Deployment");
   const LPMockArtifact = await ethers.getContractFactory("LPMock");
-  wS_USDC_lp = await LPMockArtifact.deploy(
-    "CL-wS/USDC",
-    "CL-wS/USDC",
+  wS_SHADOW_lp = await LPMockArtifact.deploy(
+    "vAMM-wS/SHADOW",
+    "vAMM-wS/SHADOW",
     wS.address,
-    USDC.address
+    SHADOW.address
   );
   await sleep(5000);
-  console.log("wS-USDC LP Deployed at:", wS_USDC_lp.address);
+  console.log("wS-SHADOW LP Deployed at:", wS_SHADOW_lp.address);
 }
 
 async function verifyLP() {
@@ -241,21 +242,24 @@ async function verifyLP() {
     address: wS_USDC_lp.address,
     contract: "contracts/Mocks/LPMock.sol:LPMock",
     constructorArguments: [
-      "CL-wS/USDC",
-      "CL-wS/USDC",
+      "vAMM-wS/SHADOW",
+      "vAMM-wS/SHADOW",
       wS.address,
-      USDC.address,
+      SHADOW.address,
     ],
   });
-  console.log("wS-USDC LP Verified");
+  console.log("wS-SHADOW LP Verified");
 }
 
 async function deployFarm() {
   console.log("Starting Farm Deployment");
   const FarmMockArtifact = await ethers.getContractFactory("FarmMock");
-  wS_oS_lp_farm = await FarmMockArtifact.deploy(wS_oS_lp.address, SWPX.address);
+  wS_SWPX_lp_farm = await FarmMockArtifact.deploy(
+    wS_SWPX_lp.address,
+    SWPX.address
+  );
   await sleep(5000);
-  console.log("wS-oS LP Farm Deployed at:", wS_oS_lp_farm.address);
+  console.log("wS-SWPX LP Farm Deployed at:", wS_SWPX_lp_farm.address);
 }
 
 async function verifyFarm() {
@@ -801,7 +805,7 @@ async function deployERC4626Plugin() {
     stS.address,
     [wS.address],
     oneHundred,
-    24 * 3600,
+    2 * 24 * 3600,
     two,
     ten
   );
@@ -861,12 +865,12 @@ async function verifyLPPluginFactory() {
 async function deployLPPlugin() {
   console.log("Starting LPPlugin Deployment");
   await lpPluginFactory.createPlugin(
-    "Shadow CL-wS/USDC",
+    "Shadow vAMM-wS/SHADOW",
     voter.address,
-    wS_USDC_lp.address,
-    [wS.address, USDC.address],
+    wS_SHADOW_lp.address,
+    [wS.address, SHADOW.address],
     oneHundred,
-    24 * 3600,
+    2 * 24 * 3600,
     two,
     ten
   );
@@ -884,10 +888,10 @@ async function verifyLPPlugin() {
     address: lpPlugin.address,
     contract: "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
     constructorArguments: [
-      "Shadow CL-wS/USDC",
+      "Shadow vAMM-wS/SHADOW",
       voter.address,
-      wS_USDC_lp.address,
-      [wS.address, USDC.address],
+      wS_SHADOW_lp.address,
+      [wS.address, SHADOW.address],
     ],
   });
   console.log("LPPlugin Verified");
@@ -926,13 +930,13 @@ async function verifyFarmPluginFactory() {
 async function deployFarmPlugin() {
   console.log("Starting FarmPlugin Deployment");
   await farmPluginFactory.createPlugin(
-    "SwapX sAMM-wS/oS",
+    "SwapX vAMM-wS/SWPX",
     voter.address,
-    wS_oS_lp.address,
+    wS_SWPX_lp.address,
     [SWPX.address],
-    wS_oS_lp_farm.address,
+    wS_SWPX_lp_farm.address,
     oneHundred,
-    24 * 3600,
+    2 * 24 * 3600,
     two,
     ten
   );
@@ -1050,7 +1054,7 @@ async function main() {
   //===================================================================
 
   // console.log("Starting Ancillary Verification");
-  await verifyMulticall();
+  // await verifyMulticall();
   // await verifyController();
   // await verifyRouter();
   // console.log("Ancillary Contracts Verified");
@@ -1166,48 +1170,55 @@ async function main() {
   // console.log("Distro");
 
   //===================================================================
+  // Delist plugins
+  //===================================================================
+
+  // await voter.killGauge(await voter.gauges(farmPlugin.address));
+  // await voter.killGauge(await voter.gauges(lpPlugin.address));
+
+  //===================================================================
   // Print Deployment
   //===================================================================
 
-  // console.log("SonicSphere Mainnet Deployment");
-  // console.log();
-  // console.log("wS: ", wS.address);
-  // console.log("USDC: ", USDC.address);
-  // console.log("SWPX: ", SWPX.address);
-  // console.log("stS: ", stS.address);
-  // console.log("Shadow CL-wS/USDC: ", wS_USDC_lp.address);
-  // console.log("SwapX sAMM-wS/oS: ", wS_oS_lp.address);
-  // console.log("SwapX sAMM-wS/oS Farm: ", wS_oS_lp_farm.address);
-  // console.log();
-  // console.log("SPHERE: ", TOKEN.address);
-  // console.log("oSPHERE: ", OTOKEN.address);
-  // console.log("gSPHERE: ", VTOKEN.address);
-  // console.log("Fees: ", fees.address);
-  // console.log("Rewarder: ", rewarder.address);
-  // console.log();
-  // console.log("GaugeFactory: ", gaugeFactory.address);
-  // console.log("BribeFactory: ", bribeFactory.address);
-  // console.log("Voter: ", voter.address);
-  // console.log("Minter: ", minter.address);
-  // console.log();
-  // console.log("Multicall: ", multicall.address);
-  // console.log("Controller: ", controller.address);
-  // console.log();
-  // console.log("Auction Factory: ", auctionFactory.address);
-  // console.log("Reward Auction: ", rewardAuction.address);
-  // console.log();
+  console.log("SonicSphere Mainnet Deployment");
+  console.log();
+  console.log("wS: ", wS.address);
+  console.log("SHADOW: ", SHADOW.address);
+  console.log("SWPX: ", SWPX.address);
+  console.log("stS: ", stS.address);
+  console.log("Shadow vAMM-wS/SHADOW: ", wS_SHADOW_lp.address);
+  console.log("SwapX vAMM-wS/SWPX: ", wS_SWPX_lp.address);
+  console.log("SwapX vAMM-wS/SWPX Farm: ", wS_SWPX_lp_farm.address);
+  console.log();
+  console.log("SPHERE: ", TOKEN.address);
+  console.log("oSPHERE: ", OTOKEN.address);
+  console.log("gSPHERE: ", VTOKEN.address);
+  console.log("Fees: ", fees.address);
+  console.log("Rewarder: ", rewarder.address);
+  console.log();
+  console.log("GaugeFactory: ", gaugeFactory.address);
+  console.log("BribeFactory: ", bribeFactory.address);
+  console.log("Voter: ", voter.address);
+  console.log("Minter: ", minter.address);
+  console.log();
+  console.log("Multicall: ", multicall.address);
+  console.log("Controller: ", controller.address);
+  console.log();
+  console.log("Auction Factory: ", auctionFactory.address);
+  console.log("Reward Auction: ", rewardAuction.address);
+  console.log();
 
-  // let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
+  let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
 
-  // for (let i = 0; i < plugins.length; i++) {
-  //   let plugin = await multicall.pluginCardData(plugins[i]);
-  //   console.log("Name: ", plugin.name);
-  //   console.log("Asset: ", plugin.asset);
-  //   console.log("Gauge: ", plugin.gauge);
-  //   console.log("Bribe: ", plugin.bribe);
-  //   console.log("AssetAuction: ", plugin.assetAuction);
-  //   console.log();
-  // }
+  for (let i = 0; i < plugins.length; i++) {
+    let plugin = await multicall.pluginCardData(plugins[i], addressZero);
+    console.log("Name: ", plugin.name);
+    console.log("Asset: ", plugin.asset);
+    console.log("Gauge: ", plugin.gauge);
+    console.log("Bribe: ", plugin.bribe);
+    console.log("AssetAuction: ", plugin.assetAuction);
+    console.log();
+  }
 }
 
 main()

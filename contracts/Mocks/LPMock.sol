@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
+interface IERC20Mock {
+    function mint(address to, uint256 amount) external;
+}
+
 contract LPMock is ERC20, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -33,8 +37,8 @@ contract LPMock is ERC20, ReentrancyGuard {
     // Claim accumulated fees (simplified to just mint fixed amounts)
     function claimFees() external nonReentrant {
         if (balanceOf(msg.sender) > 0) {
-            token0.safeTransfer(msg.sender, REWARD_AMOUNT_0);
-            token1.safeTransfer(msg.sender, REWARD_AMOUNT_1);
+            IERC20Mock(address(token0)).mint(msg.sender, REWARD_AMOUNT_0);
+            IERC20Mock(address(token1)).mint(msg.sender, REWARD_AMOUNT_1);
         }
     }
 }

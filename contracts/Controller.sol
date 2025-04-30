@@ -53,15 +53,17 @@ contract Controller {
     function distributeToAuctions() public {
         address[] memory plugins = IVoter(voter).getPlugins();
         for (uint256 i = 0; i < plugins.length; i++) {
-            address oToken = IVoter(voter).OTOKEN();
-            address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
-            address[] memory tokens = new address[](rewardTokens.length + 1);
-            tokens[0] = oToken;
-            for (uint256 j = 0; j < rewardTokens.length; j++) {
-                tokens[j + 1] = rewardTokens[j];
+            if (IVoter(voter).isAlive(IVoter(voter).gauges(plugins[i]))) {
+                address oToken = IVoter(voter).OTOKEN();
+                address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
+                address[] memory tokens = new address[](rewardTokens.length + 1);
+                tokens[0] = oToken;
+                for (uint256 j = 0; j < rewardTokens.length; j++) {
+                    tokens[j + 1] = rewardTokens[j];
+                }
+                IPlugin(plugins[i]).claim();
+                IPlugin(plugins[i]).distribute(tokens);
             }
-            IPlugin(plugins[i]).claim();
-            IPlugin(plugins[i]).distribute(tokens);
         }
     }
 

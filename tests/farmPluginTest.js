@@ -296,7 +296,13 @@ describe("farmPluginTest", function () {
 
     // Purchase TOKEN
     console.log("Purchasing TOKEN...");
-    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user0.address,
+      AddressZero
+    );
     const tokenBalance = await TOKEN.balanceOf(user0.address);
     console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
 

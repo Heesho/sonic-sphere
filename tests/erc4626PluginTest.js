@@ -290,7 +290,13 @@ describe("erc4626PluginTest", function () {
 
     // Purchase TOKEN
     console.log("Purchasing TOKEN...");
-    await TOKEN.connect(user0).buy(baseAmount, 1, 1792282187, user0.address);
+    await TOKEN.connect(user0).buy(
+      baseAmount,
+      1,
+      1792282187,
+      user0.address,
+      AddressZero
+    );
     const tokenBalance = await TOKEN.balanceOf(user0.address);
     console.log("TOKEN purchased:", ethers.utils.formatUnits(tokenBalance, 18));
 
@@ -890,6 +896,10 @@ describe("erc4626PluginTest", function () {
       ethers.utils.formatUnits(await XTEST0.balanceOf(plugin0.address), 18)
     );
     console.log(
+      "- Plugin TEST0 Balance:",
+      ethers.utils.formatUnits(await TEST0.balanceOf(plugin0.address), 18)
+    );
+    console.log(
       "- XTEST0 Total Assets:",
       ethers.utils.formatUnits(await XTEST0.totalAssets(), 18)
     );
@@ -897,6 +907,10 @@ describe("erc4626PluginTest", function () {
     // Distribute via Controller
     console.log("\nCklaiming and Distributing via Controller...");
     await controller.distributeToAuctions();
+    // await plugin0.claim();
+    // await plugin0.distribute([OTOKEN.address, TEST0.address]);
+    // console.log("TEST0 address: ", TEST0.address);
+    // console.log("Plugin Reward Tokens: ", await plugin0.getRewardTokens());
 
     // Check final state
     const afterYieldTVL = await plugin0.getTvl();
