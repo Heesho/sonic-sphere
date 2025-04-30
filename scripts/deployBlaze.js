@@ -33,73 +33,73 @@ let lpPluginFactory, lpPlugin;
 let farmPluginFactory, farmPlugin;
 
 async function getContracts() {
-  // OTOKENFactory = await ethers.getContractAt(
-  //   "contracts/OTOKENFactory.sol:OTOKENFactory",
-  //   ""
-  // );
-  // VTOKENFactory = await ethers.getContractAt(
-  //   "contracts/VTOKENFactory.sol:VTOKENFactory",
-  //   ""
-  // );
-  // feesFactory = await ethers.getContractAt(
-  //   "contracts/TOKENFeesFactory.sol:TOKENFeesFactory",
-  //   ""
-  // );
-  // rewarderFactory = await ethers.getContractAt(
-  //   "contracts/VTOKENRewarderFactory.sol:VTOKENRewarderFactory",
-  //   ""
-  // );
+  OTOKENFactory = await ethers.getContractAt(
+    "contracts/OTOKENFactory.sol:OTOKENFactory",
+    "0x31835667E64658F7e4989C39805E6F7527E409Fc"
+  );
+  VTOKENFactory = await ethers.getContractAt(
+    "contracts/VTOKENFactory.sol:VTOKENFactory",
+    "0xeAA89291Ef11C0c7cA05aF56643Be275d22BB37C"
+  );
+  feesFactory = await ethers.getContractAt(
+    "contracts/TOKENFeesFactory.sol:TOKENFeesFactory",
+    "0x278515Da46C1877D4aeE44a6f817f1c4A938A485"
+  );
+  rewarderFactory = await ethers.getContractAt(
+    "contracts/VTOKENRewarderFactory.sol:VTOKENRewarderFactory",
+    "0x8ea8052b931d651E6a4c5Fd82B0E7893df4F23E3"
+  );
 
-  // TOKEN = await ethers.getContractAt(
-  //   "contracts/TOKEN.sol:TOKEN",
-  //   ""
-  // );
-  // OTOKEN = await ethers.getContractAt(
-  //   "contracts/OTOKENFactory.sol:OTOKEN",
-  //   await TOKEN.OTOKEN()
-  // );
-  // VTOKEN = await ethers.getContractAt(
-  //   "contracts/VTOKENFactory.sol:VTOKEN",
-  //   await TOKEN.VTOKEN()
-  // );
-  // fees = await ethers.getContractAt(
-  //   "contracts/TOKENFeesFactory.sol:TOKENFees",
-  //   await TOKEN.FEES()
-  // );
-  // rewarder = await ethers.getContractAt(
-  //   "contracts/VTOKENRewarderFactory.sol:VTOKENRewarder",
-  //   await VTOKEN.rewarder()
-  // );
+  TOKEN = await ethers.getContractAt(
+    "contracts/TOKEN.sol:TOKEN",
+    "0x62a30f2AE7b720d89f897DA5e9bC1a957d4dd22f"
+  );
+  OTOKEN = await ethers.getContractAt(
+    "contracts/OTOKENFactory.sol:OTOKEN",
+    await TOKEN.OTOKEN()
+  );
+  VTOKEN = await ethers.getContractAt(
+    "contracts/VTOKENFactory.sol:VTOKEN",
+    await TOKEN.VTOKEN()
+  );
+  fees = await ethers.getContractAt(
+    "contracts/TOKENFeesFactory.sol:TOKENFees",
+    await TOKEN.FEES()
+  );
+  rewarder = await ethers.getContractAt(
+    "contracts/VTOKENRewarderFactory.sol:VTOKENRewarder",
+    await VTOKEN.rewarder()
+  );
 
-  // gaugeFactory = await ethers.getContractAt(
-  //   "contracts/GaugeFactory.sol:GaugeFactory",
-  //   ""
-  // );
-  // bribeFactory = await ethers.getContractAt(
-  //   "contracts/BribeFactory.sol:BribeFactory",
-  //   ""
-  // );
-  // voter = await ethers.getContractAt(
-  //   "contracts/Voter.sol:Voter",
-  //   ""
-  // );
-  // minter = await ethers.getContractAt(
-  //   "contracts/Minter.sol:Minter",
-  //   ""
-  // );
+  gaugeFactory = await ethers.getContractAt(
+    "contracts/GaugeFactory.sol:GaugeFactory",
+    "0xe95af85CE35a80a9332c701184dBFBaa6C5C8257"
+  );
+  bribeFactory = await ethers.getContractAt(
+    "contracts/BribeFactory.sol:BribeFactory",
+    "0xD15221834e52916a2b091c6775dD18823d9f4AB1"
+  );
+  voter = await ethers.getContractAt(
+    "contracts/Voter.sol:Voter",
+    "0xBa98A17f23BBfC47990810A7D42A1a89dBd42C7F"
+  );
+  minter = await ethers.getContractAt(
+    "contracts/Minter.sol:Minter",
+    "0x455543efB1D19E779E484B02863909fC90972f93"
+  );
 
-  // multicall = await ethers.getContractAt(
-  //   "contracts/Multicall.sol:Multicall",
-  //   ""
-  // );
-  // controller = await ethers.getContractAt(
-  //   "contracts/Controller.sol:Controller",
-  //   ""
-  // );
-  // router = await ethers.getContractAt(
-  //   "contracts/Router.sol:Router",
-  //   ""
-  // );
+  multicall = await ethers.getContractAt(
+    "contracts/Multicall.sol:Multicall",
+    "0xEc76C06258D32890F492c6575708D12d0AF3B9c9"
+  );
+  controller = await ethers.getContractAt(
+    "contracts/Controller.sol:Controller",
+    "0x3A9963107A87a63e8af2051eB30D5a3B1a684A57"
+  );
+  router = await ethers.getContractAt(
+    "contracts/Router.sol:Router",
+    "0x976ea47dfdd15cBAaDe92ACd891019F13A3660dB"
+  );
 
   wS = await ethers.getContractAt(
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
@@ -134,45 +134,45 @@ async function getContracts() {
     "0x06E67d7A3671d7B6Fc97f60fD7C410B4748E7679"
   );
 
-  // auctionFactory = await ethers.getContractAt(
-  //   "contracts/AuctionFactory.sol:AuctionFactory",
-  //   ""
-  // );
+  auctionFactory = await ethers.getContractAt(
+    "contracts/AuctionFactory.sol:AuctionFactory",
+    "0x9f66610f6F4Ee9Ba53008eC61C5d496B0815176B"
+  );
 
-  // rewardAuction = await ethers.getContractAt(
-  //   "contracts/AuctionFactory.sol:Auction",
-  //   ""
-  // );
+  rewardAuction = await ethers.getContractAt(
+    "contracts/AuctionFactory.sol:Auction",
+    "0x5187977424C0c010Cb02846439Cf9764E399a1c4"
+  );
 
-  // erc4626PluginFactory = await ethers.getContractAt(
-  //   "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626PluginFactory",
-  //   ""
-  // );
+  erc4626PluginFactory = await ethers.getContractAt(
+    "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626PluginFactory",
+    "0xc16C946ec40995cA3939888A34B9310E6B93b978"
+  );
 
-  // erc4626Plugin = await ethers.getContractAt(
-  //   "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626Plugin",
-  //   ""
-  // );
+  erc4626Plugin = await ethers.getContractAt(
+    "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626Plugin",
+    "0x79B53F3191fA4328449787A9DB93706b684db28E"
+  );
 
-  // lpPluginFactory = await ethers.getContractAt(
-  //   "contracts/Plugins/LPPluginFactory.sol:LPPluginFactory",
-  //   ""
-  // );
+  lpPluginFactory = await ethers.getContractAt(
+    "contracts/Plugins/LPPluginFactory.sol:LPPluginFactory",
+    "0x09117A6C49aE3f56B142Ab529dfcA4E600C77F3e"
+  );
 
-  // lpPlugin = await ethers.getContractAt(
-  //   "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
-  //   ""
-  // );
+  lpPlugin = await ethers.getContractAt(
+    "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
+    "0xAb08f5d7073434526b743291071cd126EfeB967c"
+  );
 
-  // farmPluginFactory = await ethers.getContractAt(
-  //   "contracts/Plugins/FarmPluginFactory.sol:FarmPluginFactory",
-  //   ""
-  // );
+  farmPluginFactory = await ethers.getContractAt(
+    "contracts/Plugins/FarmPluginFactory.sol:FarmPluginFactory",
+    "0xE4a350e4B8eA8D63A89038Aa1867768321aef049"
+  );
 
-  // farmPlugin = await ethers.getContractAt(
-  //   "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
-  //   ""
-  // );
+  farmPlugin = await ethers.getContractAt(
+    "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
+    "0xf053E0B97D3074FEFB2c4d854bb75Af337cfF8bA"
+  );
 
   console.log("Contracts Retrieved");
 }
@@ -954,11 +954,11 @@ async function verifyFarmPlugin() {
     address: farmPlugin.address,
     contract: "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
     constructorArguments: [
-      "SwapX sAMM-wS/oS",
+      "SwapX vAMM-wS/SWPX",
       voter.address,
-      wS_oS_lp.address,
+      wS_SWPX_lp.address,
       [SWPX.address],
-      wS_oS_lp_farm.address,
+      wS_SWPX_lp_farm.address,
     ],
   });
   console.log("FarmPlugin Verified");
@@ -1001,9 +1001,9 @@ async function main() {
   // Deploy Token
   //===================================================================
 
-  console.log("Starting Token Deployment");
-  await deployTOKEN();
-  await printTokenAddresses();
+  // console.log("Starting Token Deployment");
+  // await deployTOKEN();
+  // await printTokenAddresses();
 
   //===================================================================
   // Verify Token
