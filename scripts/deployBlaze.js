@@ -1203,6 +1203,7 @@ async function main() {
   // console.log();
   // console.log("Multicall: ", multicall.address);
   // console.log("Controller: ", controller.address);
+  // console.log("Router: ", router.address);
   // console.log();
   // console.log("Auction Factory: ", auctionFactory.address);
   // console.log("Reward Auction: ", rewardAuction.address);
