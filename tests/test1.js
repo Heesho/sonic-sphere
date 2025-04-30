@@ -438,7 +438,7 @@ describe("test1", function () {
 
   it("User0 borrows some against staked position", async function () {
     console.log("******************************************************");
-    await TOKEN.connect(user0).borrow(one);
+    await TOKEN.connect(user0).borrow(user0.address, AddressZero, one);
   });
 
   it("User0 emergency exits", async function () {
@@ -500,7 +500,10 @@ describe("test1", function () {
       TOKEN.address,
       await TOKEN.debts(user0.address)
     );
-    await TOKEN.connect(user0).repay(await TOKEN.debts(user0.address));
+    await TOKEN.connect(user0).repay(
+      user0.address,
+      await TOKEN.debts(user0.address)
+    );
   });
 
   it("User0 emergency exits", async function () {

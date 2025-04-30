@@ -33,73 +33,73 @@ let lpPluginFactory, lpPlugin;
 let farmPluginFactory, farmPlugin;
 
 async function getContracts() {
-  OTOKENFactory = await ethers.getContractAt(
-    "contracts/OTOKENFactory.sol:OTOKENFactory",
-    "0x54cCcf999B5bd3Ea12c52810fA60BB0eB41d109c"
-  );
-  VTOKENFactory = await ethers.getContractAt(
-    "contracts/VTOKENFactory.sol:VTOKENFactory",
-    "0x6A6A9AEeF062ce48Ec115182820415aC086FE139"
-  );
-  feesFactory = await ethers.getContractAt(
-    "contracts/TOKENFeesFactory.sol:TOKENFeesFactory",
-    "0x22Fdd0Ef9bf2773B0C91BaE0fe421a5fC8a8b4ea"
-  );
-  rewarderFactory = await ethers.getContractAt(
-    "contracts/VTOKENRewarderFactory.sol:VTOKENRewarderFactory",
-    "0xA4710B90d207b5aEC7561a279bf63c9D217ae5d1"
-  );
+  // OTOKENFactory = await ethers.getContractAt(
+  //   "contracts/OTOKENFactory.sol:OTOKENFactory",
+  //   ""
+  // );
+  // VTOKENFactory = await ethers.getContractAt(
+  //   "contracts/VTOKENFactory.sol:VTOKENFactory",
+  //   ""
+  // );
+  // feesFactory = await ethers.getContractAt(
+  //   "contracts/TOKENFeesFactory.sol:TOKENFeesFactory",
+  //   ""
+  // );
+  // rewarderFactory = await ethers.getContractAt(
+  //   "contracts/VTOKENRewarderFactory.sol:VTOKENRewarderFactory",
+  //   ""
+  // );
 
-  TOKEN = await ethers.getContractAt(
-    "contracts/TOKEN.sol:TOKEN",
-    "0x23Fb1d34eaF824Ba9DE57D46aAa4a533E1fc527b"
-  );
-  OTOKEN = await ethers.getContractAt(
-    "contracts/OTOKENFactory.sol:OTOKEN",
-    await TOKEN.OTOKEN()
-  );
-  VTOKEN = await ethers.getContractAt(
-    "contracts/VTOKENFactory.sol:VTOKEN",
-    await TOKEN.VTOKEN()
-  );
-  fees = await ethers.getContractAt(
-    "contracts/TOKENFeesFactory.sol:TOKENFees",
-    await TOKEN.FEES()
-  );
-  rewarder = await ethers.getContractAt(
-    "contracts/VTOKENRewarderFactory.sol:VTOKENRewarder",
-    await VTOKEN.rewarder()
-  );
+  // TOKEN = await ethers.getContractAt(
+  //   "contracts/TOKEN.sol:TOKEN",
+  //   ""
+  // );
+  // OTOKEN = await ethers.getContractAt(
+  //   "contracts/OTOKENFactory.sol:OTOKEN",
+  //   await TOKEN.OTOKEN()
+  // );
+  // VTOKEN = await ethers.getContractAt(
+  //   "contracts/VTOKENFactory.sol:VTOKEN",
+  //   await TOKEN.VTOKEN()
+  // );
+  // fees = await ethers.getContractAt(
+  //   "contracts/TOKENFeesFactory.sol:TOKENFees",
+  //   await TOKEN.FEES()
+  // );
+  // rewarder = await ethers.getContractAt(
+  //   "contracts/VTOKENRewarderFactory.sol:VTOKENRewarder",
+  //   await VTOKEN.rewarder()
+  // );
 
-  gaugeFactory = await ethers.getContractAt(
-    "contracts/GaugeFactory.sol:GaugeFactory",
-    "0x40207f0D1AFb226CB441d1Ef1f7fD56bF51EBAC0"
-  );
-  bribeFactory = await ethers.getContractAt(
-    "contracts/BribeFactory.sol:BribeFactory",
-    "0x112313C87bF34c8EA5A63e590f8EdC0159a085B0"
-  );
-  voter = await ethers.getContractAt(
-    "contracts/Voter.sol:Voter",
-    "0x156b7C62430bEE28b1d78F7804D48a67D9E1A23C"
-  );
-  minter = await ethers.getContractAt(
-    "contracts/Minter.sol:Minter",
-    "0xe393576422D144c6c8bbe2600Ae33abADf870f72"
-  );
+  // gaugeFactory = await ethers.getContractAt(
+  //   "contracts/GaugeFactory.sol:GaugeFactory",
+  //   ""
+  // );
+  // bribeFactory = await ethers.getContractAt(
+  //   "contracts/BribeFactory.sol:BribeFactory",
+  //   ""
+  // );
+  // voter = await ethers.getContractAt(
+  //   "contracts/Voter.sol:Voter",
+  //   ""
+  // );
+  // minter = await ethers.getContractAt(
+  //   "contracts/Minter.sol:Minter",
+  //   ""
+  // );
 
-  multicall = await ethers.getContractAt(
-    "contracts/Multicall.sol:Multicall",
-    "0x3f7Dc3492659659420e9c92D7283Cb761C328a23"
-  );
-  controller = await ethers.getContractAt(
-    "contracts/Controller.sol:Controller",
-    "0xE259A689D13139F413eE693BE27181192319a629"
-  );
-  router = await ethers.getContractAt(
-    "contracts/Router.sol:Router",
-    "0x21145bbB5E1001b6A173618866D31b9f34938A79"
-  );
+  // multicall = await ethers.getContractAt(
+  //   "contracts/Multicall.sol:Multicall",
+  //   ""
+  // );
+  // controller = await ethers.getContractAt(
+  //   "contracts/Controller.sol:Controller",
+  //   ""
+  // );
+  // router = await ethers.getContractAt(
+  //   "contracts/Router.sol:Router",
+  //   ""
+  // );
 
   wS = await ethers.getContractAt(
     "contracts/Mocks/ERC20Mock.sol:ERC20Mock",
@@ -134,45 +134,45 @@ async function getContracts() {
     "0x06E67d7A3671d7B6Fc97f60fD7C410B4748E7679"
   );
 
-  auctionFactory = await ethers.getContractAt(
-    "contracts/AuctionFactory.sol:AuctionFactory",
-    "0x65e3249EccD38aD841345dA5beBBebE3a73a596C"
-  );
+  // auctionFactory = await ethers.getContractAt(
+  //   "contracts/AuctionFactory.sol:AuctionFactory",
+  //   ""
+  // );
 
-  rewardAuction = await ethers.getContractAt(
-    "contracts/AuctionFactory.sol:Auction",
-    "0xc238F93Ba3A6a69E912a748764d7A2Db8483Db54"
-  );
+  // rewardAuction = await ethers.getContractAt(
+  //   "contracts/AuctionFactory.sol:Auction",
+  //   ""
+  // );
 
-  erc4626PluginFactory = await ethers.getContractAt(
-    "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626PluginFactory",
-    "0x3640d0F0832C30C2E42Ed660759Dd6556733fA45"
-  );
+  // erc4626PluginFactory = await ethers.getContractAt(
+  //   "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626PluginFactory",
+  //   ""
+  // );
 
-  erc4626Plugin = await ethers.getContractAt(
-    "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626Plugin",
-    "0xec2c7DD745c1459f545E67b473E0B7986eea868f"
-  );
+  // erc4626Plugin = await ethers.getContractAt(
+  //   "contracts/Plugins/ERC4626PluginFactory.sol:ERC4626Plugin",
+  //   ""
+  // );
 
-  lpPluginFactory = await ethers.getContractAt(
-    "contracts/Plugins/LPPluginFactory.sol:LPPluginFactory",
-    "0x8D8fe044Ac418651a5B40d03f5Ce18AA2bded963"
-  );
+  // lpPluginFactory = await ethers.getContractAt(
+  //   "contracts/Plugins/LPPluginFactory.sol:LPPluginFactory",
+  //   ""
+  // );
 
-  lpPlugin = await ethers.getContractAt(
-    "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
-    "0xf364735da9864489bCf45dad10F01962781a6301"
-  );
+  // lpPlugin = await ethers.getContractAt(
+  //   "contracts/Plugins/LPPluginFactory.sol:LPPlugin",
+  //   ""
+  // );
 
-  farmPluginFactory = await ethers.getContractAt(
-    "contracts/Plugins/FarmPluginFactory.sol:FarmPluginFactory",
-    "0xEfbcFD2666ea6f7Ebd87bF1166722d4f37dE5EF1"
-  );
+  // farmPluginFactory = await ethers.getContractAt(
+  //   "contracts/Plugins/FarmPluginFactory.sol:FarmPluginFactory",
+  //   ""
+  // );
 
-  farmPlugin = await ethers.getContractAt(
-    "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
-    "0x81525c1e712e9c2c3B076fBb492F8bb08C1dA7DB"
-  );
+  // farmPlugin = await ethers.getContractAt(
+  //   "contracts/Plugins/FarmPluginFactory.sol:FarmPlugin",
+  //   ""
+  // );
 
   console.log("Contracts Retrieved");
 }
@@ -1001,9 +1001,9 @@ async function main() {
   // Deploy Token
   //===================================================================
 
-  // console.log("Starting Token Deployment");
-  // await deployTOKEN();
-  // await printTokenAddresses();
+  console.log("Starting Token Deployment");
+  await deployTOKEN();
+  await printTokenAddresses();
 
   //===================================================================
   // Verify Token
@@ -1180,45 +1180,45 @@ async function main() {
   // Print Deployment
   //===================================================================
 
-  console.log("SonicSphere Mainnet Deployment");
-  console.log();
-  console.log("wS: ", wS.address);
-  console.log("SHADOW: ", SHADOW.address);
-  console.log("SWPX: ", SWPX.address);
-  console.log("stS: ", stS.address);
-  console.log("Shadow vAMM-wS/SHADOW: ", wS_SHADOW_lp.address);
-  console.log("SwapX vAMM-wS/SWPX: ", wS_SWPX_lp.address);
-  console.log("SwapX vAMM-wS/SWPX Farm: ", wS_SWPX_lp_farm.address);
-  console.log();
-  console.log("SPHERE: ", TOKEN.address);
-  console.log("oSPHERE: ", OTOKEN.address);
-  console.log("gSPHERE: ", VTOKEN.address);
-  console.log("Fees: ", fees.address);
-  console.log("Rewarder: ", rewarder.address);
-  console.log();
-  console.log("GaugeFactory: ", gaugeFactory.address);
-  console.log("BribeFactory: ", bribeFactory.address);
-  console.log("Voter: ", voter.address);
-  console.log("Minter: ", minter.address);
-  console.log();
-  console.log("Multicall: ", multicall.address);
-  console.log("Controller: ", controller.address);
-  console.log();
-  console.log("Auction Factory: ", auctionFactory.address);
-  console.log("Reward Auction: ", rewardAuction.address);
-  console.log();
+  // console.log("SonicSphere Blaze Deployment");
+  // console.log();
+  // console.log("wS: ", wS.address);
+  // console.log("SHADOW: ", SHADOW.address);
+  // console.log("SWPX: ", SWPX.address);
+  // console.log("stS: ", stS.address);
+  // console.log("Shadow vAMM-wS/SHADOW: ", wS_SHADOW_lp.address);
+  // console.log("SwapX vAMM-wS/SWPX: ", wS_SWPX_lp.address);
+  // console.log("SwapX vAMM-wS/SWPX Farm: ", wS_SWPX_lp_farm.address);
+  // console.log();
+  // console.log("SPHERE: ", TOKEN.address);
+  // console.log("oSPHERE: ", OTOKEN.address);
+  // console.log("gSPHERE: ", VTOKEN.address);
+  // console.log("Fees: ", fees.address);
+  // console.log("Rewarder: ", rewarder.address);
+  // console.log();
+  // console.log("GaugeFactory: ", gaugeFactory.address);
+  // console.log("BribeFactory: ", bribeFactory.address);
+  // console.log("Voter: ", voter.address);
+  // console.log("Minter: ", minter.address);
+  // console.log();
+  // console.log("Multicall: ", multicall.address);
+  // console.log("Controller: ", controller.address);
+  // console.log();
+  // console.log("Auction Factory: ", auctionFactory.address);
+  // console.log("Reward Auction: ", rewardAuction.address);
+  // console.log();
 
-  let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
+  // let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
 
-  for (let i = 0; i < plugins.length; i++) {
-    let plugin = await multicall.pluginCardData(plugins[i], addressZero);
-    console.log("Name: ", plugin.name);
-    console.log("Asset: ", plugin.asset);
-    console.log("Gauge: ", plugin.gauge);
-    console.log("Bribe: ", plugin.bribe);
-    console.log("AssetAuction: ", plugin.assetAuction);
-    console.log();
-  }
+  // for (let i = 0; i < plugins.length; i++) {
+  //   let plugin = await multicall.pluginCardData(plugins[i], addressZero);
+  //   console.log("Name: ", plugin.name);
+  //   console.log("Asset: ", plugin.asset);
+  //   console.log("Gauge: ", plugin.gauge);
+  //   console.log("Bribe: ", plugin.bribe);
+  //   console.log("AssetAuction: ", plugin.assetAuction);
+  //   console.log();
+  // }
 }
 
 main()

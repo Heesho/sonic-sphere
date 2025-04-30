@@ -572,6 +572,8 @@ describe("test0", function () {
   it("User0 borrows max against staked position", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).borrow(
+      user0.address,
+      treasury.address,
       await TOKEN.getAccountCredit(user0.address)
     );
   });
@@ -623,7 +625,7 @@ describe("test0", function () {
   it("User0 tries to repay more than what they owe", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, one);
-    await expect(TOKEN.connect(user0).repay(two)).to.be.reverted;
+    await expect(TOKEN.connect(user0).repay(user0.address, two)).to.be.reverted;
   });
 
   it("User0 Buys TOKEN with 20 BASE", async function () {
@@ -725,22 +727,24 @@ describe("test0", function () {
 
   it("User0 tries to borrow more than they can", async function () {
     console.log("******************************************************");
-    await expect(TOKEN.connect(user0).borrow(twenty)).to.be.revertedWith(
-      "TOKEN__ExceedsBorrowCreditLimit"
-    );
-    await expect(TOKEN.connect(user0).borrow(0)).to.be.revertedWith(
-      "TOKEN__InvalidZeroInput"
-    );
+    await expect(
+      TOKEN.connect(user0).borrow(user0.address, AddressZero, twenty)
+    ).to.be.revertedWith("TOKEN__ExceedsBorrowCreditLimit");
+    await expect(
+      TOKEN.connect(user0).borrow(user0.address, AddressZero, 0)
+    ).to.be.revertedWith("TOKEN__InvalidZeroInput");
   });
 
   it("User0 borrows some against staked position", async function () {
     console.log("******************************************************");
-    await TOKEN.connect(user0).borrow(one);
+    await TOKEN.connect(user0).borrow(user0.address, AddressZero, one);
   });
 
   it("User0 borrows max against staked position", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).borrow(
+      user0.address,
+      AddressZero,
       await TOKEN.getAccountCredit(user0.address)
     );
   });
@@ -780,7 +784,7 @@ describe("test0", function () {
   it("User0 repays 1 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user0).approve(TOKEN.address, one);
-    await TOKEN.connect(user0).repay(one);
+    await TOKEN.connect(user0).repay(user0.address, one);
   });
 
   it("User0 repays max BASE", async function () {
@@ -789,12 +793,17 @@ describe("test0", function () {
       TOKEN.address,
       await TOKEN.debts(user0.address)
     );
-    await TOKEN.connect(user0).repay(await TOKEN.debts(user0.address));
+    await TOKEN.connect(user0).repay(
+      user0.address,
+      await TOKEN.debts(user0.address)
+    );
   });
 
   it("User0 borrows max against staked position", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).borrow(
+      user0.address,
+      treasury.address,
       await TOKEN.getAccountCredit(user0.address)
     );
   });
@@ -1448,7 +1457,10 @@ describe("test0", function () {
       TOKEN.address,
       await TOKEN.debts(user0.address)
     );
-    await TOKEN.connect(user0).repay(await TOKEN.debts(user0.address));
+    await TOKEN.connect(user0).repay(
+      user0.address,
+      await TOKEN.debts(user0.address)
+    );
   });
 
   it("User0 unstakes all TOKEN", async function () {
@@ -1647,6 +1659,8 @@ describe("test0", function () {
   it("User0 borrows max against staked position", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user0).borrow(
+      user0.address,
+      treasury.address,
       await TOKEN.getAccountCredit(user0.address)
     );
   });
@@ -1654,6 +1668,8 @@ describe("test0", function () {
   it("User1 borrows max against staked position", async function () {
     console.log("******************************************************");
     await TOKEN.connect(user1).borrow(
+      user1.address,
+      treasury.address,
       await TOKEN.getAccountCredit(user1.address)
     );
   });
@@ -1835,7 +1851,10 @@ describe("test0", function () {
       TOKEN.address,
       await TOKEN.debts(user0.address)
     );
-    await TOKEN.connect(user0).repay(await TOKEN.debts(user0.address));
+    await TOKEN.connect(user0).repay(
+      user0.address,
+      await TOKEN.debts(user0.address)
+    );
   });
 
   it("BondingCurveData, user0", async function () {
@@ -2257,7 +2276,7 @@ describe("test0", function () {
   it("User1 repays 2 BASE", async function () {
     console.log("******************************************************");
     await BASE.connect(user1).approve(TOKEN.address, two);
-    await TOKEN.connect(user1).repay(two);
+    await TOKEN.connect(user1).repay(user1.address, two);
   });
 
   it("User1 unstakes max available VTOKEN", async function () {
@@ -2305,7 +2324,10 @@ describe("test0", function () {
       TOKEN.address,
       await TOKEN.debts(user1.address)
     );
-    await TOKEN.connect(user1).repay(await TOKEN.debts(user1.address));
+    await TOKEN.connect(user1).repay(
+      user1.address,
+      await TOKEN.debts(user1.address)
+    );
   });
 
   it("User1 unstakes max available VTOKEN", async function () {
@@ -2572,9 +2594,9 @@ describe("test0", function () {
 
   it("User1 tries to borrow 1 BASE", async function () {
     console.log("******************************************************");
-    await expect(TOKEN.connect(user1).borrow(one)).to.be.revertedWith(
-      "TOKEN__ExceedsBorrowCreditLimit"
-    );
+    await expect(
+      TOKEN.connect(user1).borrow(user1.address, AddressZero, one)
+    ).to.be.revertedWith("TOKEN__ExceedsBorrowCreditLimit");
   });
 
   it("TOKEN coverage testing", async function () {
@@ -2631,12 +2653,12 @@ describe("test0", function () {
     await expect(
       TOKEN.connect(user1).exercise(0, user1.address)
     ).to.be.revertedWith("TOKEN__InvalidZeroInput");
-    await expect(TOKEN.connect(user1).borrow(0)).to.be.revertedWith(
-      "TOKEN__InvalidZeroInput"
-    );
-    await expect(TOKEN.connect(user1).repay(0)).to.be.revertedWith(
-      "TOKEN__InvalidZeroInput"
-    );
+    await expect(
+      TOKEN.connect(user1).borrow(user1.address, AddressZero, 0)
+    ).to.be.revertedWith("TOKEN__InvalidZeroInput");
+    await expect(
+      TOKEN.connect(user1).repay(user1.address, 0)
+    ).to.be.revertedWith("TOKEN__InvalidZeroInput");
   });
 
   it("OTOKEN coverage testing", async function () {

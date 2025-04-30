@@ -126,8 +126,8 @@ contract TOKEN is ERC20, ReentrancyGuard {
     event TOKEN__Sell(address indexed account, address indexed to, address indexed provider, uint256 amountIn, uint256 amountOut);
     event TOKEN__Exercise(address indexed account, address indexed to, uint256 amount);
     event TOKEN__Redeem(address indexed account, address indexed to, uint256 amount);
-    event TOKEN__Borrow(address indexed account, uint256 amount);
-    event TOKEN__Repay(address indexed account, uint256 amount);
+    event TOKEN__Borrow(address indexed account, address indexed to, address indexed provider, uint256 amount);
+    event TOKEN__Repay(address indexed account, address indexed who, uint256 amount);
 
     /*----------  MODIFIERS  --------------------------------------------*/
 
@@ -310,44 +310,51 @@ contract TOKEN is ERC20, ReentrancyGuard {
      * @notice Borrow BASE from the bonding curve against VTOKEN collateral at the floor price of TOKEN.
      *         VTOKEN collateral is locked until the debt is repaid. No bad debt is possible because TOKEN can
      *         never go below the floor price. Therefore, no oracle or liquidation mechanism is required.
+     * @param to Account address to receive BASE
+     * @param provider Address of the provider, if 0, the provider fee is not applied
      * @param amountBase Amount of BASE to borrow, must be less than the account's borrow credit limit 
      *                   (VTOKEN balance * floor price of TOKEN)
      * @return bool true=success, otherwise false
      */
-    function borrow(uint256 amountBase)
+    function borrow(address to, address provider, uint256 amountBase)
         external
         nonReentrant
         nonZeroInput(amountBase)
         returns (bool)
     {
-        address account = msg.sender;
-        uint256 credit = getAccountCredit(account);
+        uint256 credit = getAccountCredit(msg.sender);
         if (credit < amountBase) revert TOKEN__ExceedsBorrowCreditLimit();
-        debts[account] += amountBase;
+        debts[msg.sender] += amountBase;
         debtTotal += amountBase;
         uint256 feeBASE = amountBase * BORROW_FEE / DIVISOR;
-        emit TOKEN__Borrow(account, amountBase);
-        BASE.safeTransfer(FEES, feeBASE);
-        BASE.safeTransfer(account, amountBase - feeBASE);
+        emit TOKEN__Borrow(msg.sender, to, provider, amountBase);
+        if (provider != address(0)) {
+            uint256 providerFee = feeBASE * PROVIDER_FEE / DIVISOR;
+            BASE.safeTransfer(provider, providerFee);
+            BASE.safeTransfer(FEES, feeBASE - providerFee);
+        } else {
+            BASE.safeTransfer(FEES, feeBASE);
+        }
+        BASE.safeTransfer(to, amountBase - feeBASE);
         return true;
     }
 
     /**
      * @notice Repay BASE to the bonding curve to reduce the account's borrow credit limit and unlock VTOKEN collateral
+     * @param who Account address to repay BASE
      * @param amountBase Amount of BASE to repay, must be less than or equal to the account's debt
      * @return bool true=success, otherwise false
      */
-    function repay(uint256 amountBase) 
+    function repay(address who, uint256 amountBase) 
         external
         nonReentrant
         nonZeroInput(amountBase)
         returns (bool)
     {
-        address account = msg.sender;
-        debts[account] -= amountBase;
+        debts[who] -= amountBase;
         debtTotal -= amountBase;
-        emit TOKEN__Repay(account, amountBase);
-        BASE.safeTransferFrom(account, address(this), amountBase);
+        emit TOKEN__Repay(msg.sender, who, amountBase);
+        BASE.safeTransferFrom(msg.sender, address(this), amountBase);
         return true;
     }
 
