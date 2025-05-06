@@ -12,6 +12,7 @@ interface IVTOKEN {
 }
 
 interface IPlugin {
+    function asset() external view returns (address);
     function setGauge(address _gauge) external;
     function setBribe(address _bribe) external;
 }
@@ -283,6 +284,8 @@ contract Voter is ReentrancyGuard, Ownable {
         IERC20(OTOKEN).approve(_gauge, type(uint).max);
 
         address _bribe = IBribeFactory(bribefactory).createBribe(address(this));
+        address _asset = IPlugin(_plugin).asset();
+        IBribe(_bribe).addReward(_asset);
         IPlugin(_plugin).setBribe(_bribe);
 
         gauges[_plugin] = _gauge;
