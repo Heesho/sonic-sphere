@@ -1,10 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface IPlugin {
+    function asset() external view returns (address);
+    function getBribe() external view returns (address);
     function deposit(uint256 amount) external;
+}
+
+interface IBribe {
+    function left(address _rewardsToken) external view returns (uint256 leftover);
+    function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
+}
+
+contract BribePot {
+    using SafeERC20 for IERC20;
+
+    address public immutable plugin;
+
+    constructor(address _plugin) {
+        plugin = _plugin;
+    }
+    
+    function distribute() external {
+        address token = IPlugin(plugin).asset();
+        address bribe = IPlugin(plugin).getBribe();
+        uint256 balance = IERC20(token).balanceOf(address(this));
+        if (balance > IBribe(bribe).left(address(token))) {
+            IERC20(token).approve(address(bribe), 0);
+            IERC20(token).approve(address(bribe), balance);
+            IBribe(bribe).notifyRewardAmount(address(token), balance);
+        }
+    }
+
 }
 
 contract Auction {
@@ -19,11 +49,14 @@ contract Auction {
     uint256 public constant ABS_MIN_INIT_PRICE = 1e6; // Minimum sane value for init price
     uint256 public constant ABS_MAX_INIT_PRICE = type(uint192).max; // chosen so that initPrice * priceMultiplier does not exceed uint256
     uint256 public constant PRICE_MULTIPLIER_SCALE = 1e18;
+    uint256 public constant DIVISOR = 10000;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     IERC20 public immutable paymentToken;
+    address public immutable factory;
     address public immutable paymentReceiver;
+    address public immutable bribePot;
     bool public immutable receiverIsPlugin;
     uint256 public immutable epochPeriod;
     uint256 public immutable priceMultiplier;
@@ -89,6 +122,7 @@ contract Auction {
         bool receiverIsPlugin_,
         address paymentToken_,
         address paymentReceiver_,
+        address bribePot_,
         uint256 epochPeriod_,
         uint256 priceMultiplier_,
         uint256 minInitPrice_
@@ -107,8 +141,10 @@ contract Auction {
         slot0.startTime = uint40(block.timestamp);
         receiverIsPlugin = receiverIsPlugin_;
 
+        factory = msg.sender;
         paymentToken = IERC20(paymentToken_);
         paymentReceiver = paymentReceiver_;
+        bribePot = bribePot_;
         epochPeriod = epochPeriod_;
         priceMultiplier = priceMultiplier_;
         minInitPrice = minInitPrice_;
@@ -143,10 +179,18 @@ contract Auction {
 
         if (paymentAmount > 0) {
             if (receiverIsPlugin) {
+                uint256 split = AuctionFactory(factory).split();
                 paymentToken.safeTransferFrom(msg.sender, address(this), paymentAmount);
-                paymentToken.safeApprove(paymentReceiver, 0);
-                paymentToken.safeApprove(paymentReceiver, paymentAmount);
-                IPlugin(paymentReceiver).deposit(paymentAmount);
+                uint256 bribeAmount = paymentAmount * split / DIVISOR;
+                uint256 pluginAmount = paymentAmount - bribeAmount;
+                if (bribeAmount > 0) {
+                    paymentToken.safeTransfer(bribePot, bribeAmount);
+                }
+                if (pluginAmount > 0) {
+                    paymentToken.safeApprove(paymentReceiver, 0);
+                    paymentToken.safeApprove(paymentReceiver, pluginAmount);
+                    IPlugin(paymentReceiver).deposit(pluginAmount);
+                }
             } else {
                 paymentToken.safeTransferFrom(msg.sender, paymentReceiver, paymentAmount);
             }
@@ -214,13 +258,24 @@ contract Auction {
     }
 }
 
-contract AuctionFactory {
+contract AuctionFactory is Ownable {
 
+    uint256 public constant MAX_SPLIT = 5000;
     address public last_auction;
+    uint256 public split;
 
     event AuctionFactory__AuctionCreated(address auction);
+    event AuctionFactory__SplitSet(uint256 split);
+
+    error AuctionFactory__SplitExceedsMax();
 
     constructor() {}
+
+    function setSplit(uint256 split_) external onlyOwner {
+        if (split_ > MAX_SPLIT) revert AuctionFactory__SplitExceedsMax();
+        split = split_;
+        emit AuctionFactory__SplitSet(split_);
+    }
 
     function createAuction(
         uint256 initPrice,
@@ -231,7 +286,12 @@ contract AuctionFactory {
         uint256 priceMultiplier_,
         uint256 minInitPrice_
     ) external returns (address) {
-        Auction auction = new Auction(initPrice, receiverIsPlugin_, paymentToken_, paymentReceiver_, epochPeriod_, priceMultiplier_, minInitPrice_);
+        address bribePot_;
+        if (receiverIsPlugin_) {
+            BribePot bribePot = new BribePot(paymentReceiver_);
+            bribePot_ = address(bribePot);
+        }
+        Auction auction = new Auction(initPrice, receiverIsPlugin_, paymentToken_, paymentReceiver_, bribePot_, epochPeriod_, priceMultiplier_, minInitPrice_);
         last_auction = address(auction);
         emit AuctionFactory__AuctionCreated(address(auction));
         return address(auction);
