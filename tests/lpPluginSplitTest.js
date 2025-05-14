@@ -35,7 +35,7 @@ let TEST0, TEST1, LP0, plugin0, gauge0, bribe0, auction0;
 
 let router;
 
-describe("lpPluginTest", function () {
+describe("lpPluginSplitTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -229,6 +229,17 @@ describe("lpPluginTest", function () {
     controller = await controllerArtifact.deploy(voter.address, fees.address);
     console.log("- Controller Initialized");
 
+    const routerArtifact = await ethers.getContractFactory("Router");
+    router = await routerArtifact.deploy(
+      voter.address,
+      TOKEN.address,
+      OTOKEN.address,
+      multicall.address,
+      rewardAuction.address,
+      controller.address
+    );
+    console.log("- Router Initialized");
+
     // System set-up
     await gaugeFactory.setVoter(voter.address);
     await bribeFactory.setVoter(voter.address);
@@ -271,6 +282,11 @@ describe("lpPluginTest", function () {
     console.log("- LPPlugin Initialized");
     console.log("Initialization Complete");
     console.log();
+  });
+
+  it("Set Auction Split to 50%", async function () {
+    console.log("******************************************************");
+    await auctionFactory.setSplit(5000);
   });
 
   it("Mint test tokens to each user", async function () {
@@ -663,15 +679,9 @@ describe("lpPluginTest", function () {
     console.log("- Epoch:", initialEpoch.toString());
 
     // Buy at zero price
-    await rewardAuction
+    await router
       .connect(user1)
-      .buy(
-        [TEST0.address, TEST1.address],
-        user1.address,
-        initialEpoch,
-        1792282187,
-        initialPrice
-      );
+      .buyFromRewardAuction(initialEpoch, 1792282187, initialPrice);
 
     // Now add new rewards to the auction
     await LP0.mint(plugin0.address, oneHundred);
@@ -707,18 +717,12 @@ describe("lpPluginTest", function () {
       user2.address,
       AddressZero
     );
-    await TOKEN.connect(user2).approve(rewardAuction.address, currentPrice);
+    await TOKEN.connect(user2).approve(router.address, currentPrice);
 
     // Buy from reward auction at new price
-    await rewardAuction
+    await router
       .connect(user2)
-      .buy(
-        [TEST0.address, TEST1.address],
-        user2.address,
-        currentEpoch,
-        1792282187,
-        currentPrice
-      );
+      .buyFromRewardAuction(currentEpoch, 1792282187, currentPrice);
 
     console.log("\nPost-Purchase State:");
     console.log(
@@ -779,17 +783,11 @@ describe("lpPluginTest", function () {
       user1.address,
       AddressZero
     );
-    await TOKEN.connect(user1).approve(rewardAuction.address, firstPrice);
+    await TOKEN.connect(user1).approve(router.address, firstPrice);
 
-    await rewardAuction
+    await router
       .connect(user1)
-      .buy(
-        [TEST0.address, TEST1.address],
-        user1.address,
-        firstEpoch,
-        1792282187,
-        firstPrice
-      );
+      .buyFromRewardAuction(firstEpoch, 1792282187, firstPrice);
 
     // Second distribution
     await LP0.mint(plugin0.address, oneHundred);
@@ -822,17 +820,11 @@ describe("lpPluginTest", function () {
       user2.address,
       treasury.address
     );
-    await TOKEN.connect(user2).approve(rewardAuction.address, secondPrice);
+    await TOKEN.connect(user2).approve(router.address, secondPrice);
 
-    await rewardAuction
+    await router
       .connect(user2)
-      .buy(
-        [TEST0.address, TEST1.address],
-        user2.address,
-        secondEpoch,
-        1792282187,
-        secondPrice
-      );
+      .buyFromRewardAuction(secondEpoch, 1792282187, secondPrice);
 
     console.log("\nFinal balances:");
     console.log(

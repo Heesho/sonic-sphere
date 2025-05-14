@@ -36,6 +36,10 @@ interface IAuction {
     ) external returns (uint256);
 }
 
+interface IController {
+    function distribute() external;
+}
+
 contract Router {
     using SafeERC20 for IERC20;
     using FixedPointMathLib for uint256;
@@ -51,6 +55,7 @@ contract Router {
     address public immutable oToken;
     address public immutable multicall;
     address public immutable rewardAuction;
+    address public immutable controller;
     uint256 public immutable swapFee;
 
     /*----------  ERRORS  ---------------------------------------------*/
@@ -61,12 +66,13 @@ contract Router {
 
     /*----------  FUNCTIONS  -----------------------------------------*/
 
-    constructor(address _voter, address _token, address _oToken, address _multicall, address _rewardAuction) {
+    constructor(address _voter, address _token, address _oToken, address _multicall, address _rewardAuction, address _controller) {
         voter = _voter;
         token = _token;
         oToken = _oToken;
         multicall = _multicall;
         rewardAuction = _rewardAuction;
+        controller = _controller;
 
         swapFee = ITOKEN(token).SWAP_FEE();
     }
@@ -77,15 +83,10 @@ contract Router {
         uint256 deadline,
         uint256 maxPayment
     ) external {
+        IController(controller).distribute();
+
         address auction = IPlugin(plugin).getAssetAuction();
         address paymentToken = IAuction(auction).paymentToken();
-        address[] memory plugins = IVoter(voter).getPlugins();
-        for (uint256 i = 0; i < plugins.length; i++) {
-            address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
-            IPlugin(plugins[i]).claim();
-            IPlugin(plugins[i]).distribute(rewardTokens);
-        }
-
         address[] memory assets = new address[](1);
         assets[0] = oToken;
         IPlugin(plugin).distribute(assets);
@@ -107,15 +108,13 @@ contract Router {
         uint256 deadline,
         uint256 maxPayment
     ) external {
+        IController(controller).distribute();
+
         address[] memory plugins = IVoter(voter).getPlugins();
         uint256 assetsLength = 0;
         for (uint256 i = 0; i < plugins.length; i++) {
             address[] memory rewardTokens = IPlugin(plugins[i]).getRewardTokens();
             assetsLength += rewardTokens.length;
-            if (IPlugin(plugins[i]).getTvl() > 0) {
-                IPlugin(plugins[i]).claim();
-                IPlugin(plugins[i]).distribute(rewardTokens);
-            }
         }
         address[] memory assets = new address[](assetsLength);
         uint256 index = 0;
@@ -124,7 +123,7 @@ contract Router {
             for (uint256 j = 0; j < rewardTokens.length; j++) {
                 assets[index] = rewardTokens[j];
                 index++;
-            }
+            } 
         }
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), maxPayment);

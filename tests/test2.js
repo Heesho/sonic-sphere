@@ -189,6 +189,7 @@ describe("test2", function () {
       TOKEN.address,
       OTOKEN.address,
       multicall.address,
+      AddressZero,
       AddressZero
     );
     console.log("- Router Initialized");

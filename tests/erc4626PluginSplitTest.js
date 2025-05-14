@@ -25,7 +25,7 @@ let VTOKENFactory,
   rewarderFactory,
   gaugeFactory,
   bribeFactory;
-let minter, voter, fees, rewarder, governance, multicall, controller;
+let minter, voter, fees, rewarder, governance, multicall, controller, router;
 let TOKEN, VTOKEN, OTOKEN, BASE;
 
 let auctionFactory, rewardAuction;
@@ -33,7 +33,7 @@ let auctionFactory, rewardAuction;
 let pluginFactory;
 let TEST0, XTEST0, plugin0, gauge0, bribe0, auction0;
 
-describe("erc4626PluginTest", function () {
+describe("erc4626PluginSplitTest", function () {
   before("Initial set up", async function () {
     console.log("Begin Initialization");
 
@@ -224,6 +224,17 @@ describe("erc4626PluginTest", function () {
     controller = await controllerArtifact.deploy(voter.address, fees.address);
     console.log("- Controller Initialized");
 
+    const routerArtifact = await ethers.getContractFactory("Router");
+    router = await routerArtifact.deploy(
+      voter.address,
+      TOKEN.address,
+      OTOKEN.address,
+      multicall.address,
+      rewardAuction.address,
+      controller.address
+    );
+    console.log("- Router Initialized");
+
     // System set-up
     await gaugeFactory.setVoter(voter.address);
     await bribeFactory.setVoter(voter.address);
@@ -342,11 +353,6 @@ describe("erc4626PluginTest", function () {
     console.log("******************************************************");
     await voter.connect(owner).distro();
     await fees.distribute();
-  });
-
-  it("Set Auction Split to 30%", async function () {
-    console.log("******************************************************");
-    await auctionFactory.setSplit(3000);
   });
 
   it("Test plugin0", async function () {
@@ -721,19 +727,20 @@ describe("erc4626PluginTest", function () {
     await XTEST0.connect(user1).deposit(currentPrice.mul(2), user1.address);
 
     // Approve auction to spend XTEST0
-    await XTEST0.connect(user1).approve(auction0.address, currentPrice);
+    await XTEST0.connect(user1).approve(router.address, currentPrice);
 
     // Buy from auction with proper parameters
     console.log("\nPurchasing from auction...");
     const deadline = 1792282187;
     await plugin0.connect(user1).distribute([OTOKEN.address]);
-    await auction0.connect(user1).buy(
-      [OTOKEN.address], // assets to buy
-      user1.address, // assets receiver
-      currentEpoch, // current epoch id
-      deadline, // deadline
-      currentPrice // max payment amount
-    );
+    await router
+      .connect(user1)
+      .buyFromAssetAuction(
+        plugin0.address,
+        currentEpoch,
+        deadline,
+        currentPrice
+      );
 
     // Get post-purchase state
     const postPluginCard = await multicall.pluginCardData(
@@ -809,17 +816,16 @@ describe("erc4626PluginTest", function () {
       "User2 XTEST0 Balance: ",
       divDec(await XTEST0.balanceOf(user2.address))
     );
-    await XTEST0.connect(user2).approve(auction0.address, currentPrice);
+    await XTEST0.connect(user2).approve(router.address, currentPrice);
 
     // Buy from auction with proper parameters
     console.log("\nPurchasing from auction...");
     const deadline = 1792282187; // 1 hour from now
     await plugin0.connect(user2).distribute([OTOKEN.address]);
-    await auction0
+    await router
       .connect(user2)
-      .buy(
-        [OTOKEN.address],
-        user2.address,
+      .buyFromAssetAuction(
+        plugin0.address,
         currentEpoch,
         deadline,
         currentPrice
@@ -982,17 +988,16 @@ describe("erc4626PluginTest", function () {
     await XTEST0.connect(user1).deposit(currentPrice.mul(2), user1.address);
 
     // Approve auction to spend XTEST0
-    await XTEST0.connect(user1).approve(auction0.address, currentPrice);
+    await XTEST0.connect(user1).approve(router.address, currentPrice);
 
     // Buy from auction with proper parameters
     console.log("\nPurchasing from auction...");
     const deadline = 1792282187;
     await controller.distribute();
-    await auction0
+    await router
       .connect(user1)
-      .buy(
-        [OTOKEN.address],
-        user1.address,
+      .buyFromAssetAuction(
+        plugin0.address,
         currentEpoch,
         deadline,
         currentPrice

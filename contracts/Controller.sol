@@ -14,9 +14,19 @@ interface ITOKENFees {
 }
 
 interface IPlugin {
+    function getTvl() external view returns (uint256);
+    function getAssetAuction() external view returns (address);
     function getRewardTokens() external view returns (address[] memory);
     function claim() external;
     function distribute(address[] memory tokens) external;
+}
+
+interface IAuction {
+    function bribePot() external view returns (address);
+}
+
+interface IBribePot {
+    function distribute() external;
 }
 
 contract Controller {
@@ -50,6 +60,17 @@ contract Controller {
         }
     }
 
+    function distributeToBribes() public {
+        address[] memory plugins = IVoter(voter).getPlugins();
+        for (uint256 i = 0; i < plugins.length; i++) {
+            address auction = IPlugin(plugins[i]).getAssetAuction();
+            address bribePot = IAuction(auction).bribePot();
+            if (IVoter(voter).isAlive(IVoter(voter).gauges(plugins[i]))) {
+                IBribePot(bribePot).distribute();
+            }
+        }
+    }
+
     function distributeToAuctions() public {
         address[] memory plugins = IVoter(voter).getPlugins();
         for (uint256 i = 0; i < plugins.length; i++) {
@@ -61,7 +82,9 @@ contract Controller {
                 for (uint256 j = 0; j < rewardTokens.length; j++) {
                     tokens[j + 1] = rewardTokens[j];
                 }
-                IPlugin(plugins[i]).claim();
+                if (IPlugin(plugins[i]).getTvl() > 0) {
+                    IPlugin(plugins[i]).claim();
+                }
                 IPlugin(plugins[i]).distribute(tokens);
             }
         }
@@ -73,6 +96,7 @@ contract Controller {
 
     function distribute() external {
         distributeToGauges();
+        distributeToBribes();
         distributeToAuctions();
         distributeToStakers();
     }
