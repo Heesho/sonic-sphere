@@ -1168,6 +1168,13 @@ async function main() {
   // console.log("Plugins Voted for");
 
   //===================================================================
+  // Set bribe split
+  //===================================================================
+
+  // await auctionFactory.setSplit(5000);
+  // console.log("Bribe split set to 50%");
+
+  //===================================================================
   // Distro
   //===================================================================
 
@@ -1185,46 +1192,46 @@ async function main() {
   // Print Deployment
   //===================================================================
 
-  console.log("SonicSphere Blaze Deployment");
-  console.log();
-  console.log("wS: ", wS.address);
-  console.log("SHADOW: ", SHADOW.address);
-  console.log("SWPX: ", SWPX.address);
-  console.log("stS: ", stS.address);
-  console.log("Shadow vAMM-wS/SHADOW: ", wS_SHADOW_lp.address);
-  console.log("SwapX vAMM-wS/SWPX: ", wS_SWPX_lp.address);
-  console.log("SwapX vAMM-wS/SWPX Farm: ", wS_SWPX_lp_farm.address);
-  console.log();
-  console.log("SPHERE: ", TOKEN.address);
-  console.log("oSPHERE: ", OTOKEN.address);
-  console.log("gSPHERE: ", VTOKEN.address);
-  console.log("Fees: ", fees.address);
-  console.log("Rewarder: ", rewarder.address);
-  console.log();
-  console.log("GaugeFactory: ", gaugeFactory.address);
-  console.log("BribeFactory: ", bribeFactory.address);
-  console.log("Voter: ", voter.address);
-  console.log("Minter: ", minter.address);
-  console.log();
-  console.log("Multicall: ", multicall.address);
-  console.log("Controller: ", controller.address);
-  console.log("Router: ", router.address);
-  console.log();
-  console.log("Auction Factory: ", auctionFactory.address);
-  console.log("Reward Auction: ", rewardAuction.address);
-  console.log();
+  // console.log("SonicSphere Blaze Deployment");
+  // console.log();
+  // console.log("wS: ", wS.address);
+  // console.log("SHADOW: ", SHADOW.address);
+  // console.log("SWPX: ", SWPX.address);
+  // console.log("stS: ", stS.address);
+  // console.log("Shadow vAMM-wS/SHADOW: ", wS_SHADOW_lp.address);
+  // console.log("SwapX vAMM-wS/SWPX: ", wS_SWPX_lp.address);
+  // console.log("SwapX vAMM-wS/SWPX Farm: ", wS_SWPX_lp_farm.address);
+  // console.log();
+  // console.log("SPHERE: ", TOKEN.address);
+  // console.log("oSPHERE: ", OTOKEN.address);
+  // console.log("gSPHERE: ", VTOKEN.address);
+  // console.log("Fees: ", fees.address);
+  // console.log("Rewarder: ", rewarder.address);
+  // console.log();
+  // console.log("GaugeFactory: ", gaugeFactory.address);
+  // console.log("BribeFactory: ", bribeFactory.address);
+  // console.log("Voter: ", voter.address);
+  // console.log("Minter: ", minter.address);
+  // console.log();
+  // console.log("Multicall: ", multicall.address);
+  // console.log("Controller: ", controller.address);
+  // console.log("Router: ", router.address);
+  // console.log();
+  // console.log("Auction Factory: ", auctionFactory.address);
+  // console.log("Reward Auction: ", rewardAuction.address);
+  // console.log();
 
-  let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
+  // let plugins = [farmPlugin.address, lpPlugin.address, erc4626Plugin.address];
 
-  for (let i = 0; i < plugins.length; i++) {
-    let plugin = await multicall.pluginCardData(plugins[i], addressZero);
-    console.log("Name: ", plugin.name);
-    console.log("Asset: ", plugin.asset);
-    console.log("Gauge: ", plugin.gauge);
-    console.log("Bribe: ", plugin.bribe);
-    console.log("AssetAuction: ", plugin.assetAuction);
-    console.log();
-  }
+  // for (let i = 0; i < plugins.length; i++) {
+  //   let plugin = await multicall.pluginCardData(plugins[i], addressZero);
+  //   console.log("Name: ", plugin.name);
+  //   console.log("Asset: ", plugin.asset);
+  //   console.log("Gauge: ", plugin.gauge);
+  //   console.log("Bribe: ", plugin.bribe);
+  //   console.log("AssetAuction: ", plugin.assetAuction);
+  //   console.log();
+  // }
 }
 
 main()
