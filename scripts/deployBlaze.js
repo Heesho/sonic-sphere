@@ -90,15 +90,15 @@ async function getContracts() {
 
   multicall = await ethers.getContractAt(
     "contracts/Multicall.sol:Multicall",
-    "0x65654BDe0e02f3c46222d297fe155Bf67C33166F"
+    "0x5226Aff779E8553f3d94a75f6E930d89DFE3E07C"
   );
   controller = await ethers.getContractAt(
     "contracts/Controller.sol:Controller",
-    "0x3ea169bc579bF24673428bC710b22F06a8F4ff60"
+    "0x05b5A5EF3C7E962eCE419369d84a9Efb5896BAbe"
   );
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
-    "0x6bb6CfE7398ac70d6fF6abEAD3aBa4D2162009e4"
+    "0x3259cda8F8dA59FE6a2A009292099C2D38273190"
   );
 
   wS = await ethers.getContractAt(
@@ -1178,8 +1178,8 @@ async function main() {
   // Distro
   //===================================================================
 
-  // await controller.distribute();
-  // console.log("Distro");
+  await controller.distribute();
+  console.log("Distro");
 
   //===================================================================
   // Delist plugins
