@@ -1178,8 +1178,8 @@ async function main() {
   // Distro
   //===================================================================
 
-  await controller.distribute();
-  console.log("Distro");
+  // await controller.distribute();
+  // console.log("Distro");
 
   //===================================================================
   // Delist plugins
