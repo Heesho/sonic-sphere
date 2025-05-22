@@ -29,12 +29,10 @@ contract LPMock is ERC20, ReentrancyGuard {
         token1 = IERC20(_token1);
     }
 
-    // Mint LP tokens (in real pools this would be done when adding liquidity)
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
 
-    // Claim accumulated fees (simplified to just mint fixed amounts)
     function claimFees() external nonReentrant {
         if (balanceOf(msg.sender) > 0) {
             IERC20Mock(address(token0)).mint(msg.sender, REWARD_AMOUNT_0);
