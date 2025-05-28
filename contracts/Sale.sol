@@ -14,18 +14,17 @@ contract Sale is Ownable {
     uint256 constant public MIN_CAP =  5_000_000 ether;
     uint256 constant public MAX_CAP = 10_000_000 ether;
 
-
     /*----------  STATE VARIABLES  --------------------------------------*/
 
     address public token;
 
-    mapping(address => uint256) public account_Amount;
-    mapping(address => uint256) public account_Claim;
-    mapping(address => uint256) public account_Refund;
-
     uint256 public totalAmount;
     uint256 public totalClaim;
     uint256 public totalRefund;
+
+    mapping(address => uint256) public account_Amount;
+    mapping(address => uint256) public account_Claim;
+    mapping(address => uint256) public account_Refund;
 
     enum State {
         Inactive,
@@ -38,26 +37,36 @@ contract Sale is Ownable {
 
     /*----------  ERRORS  ------------------------------------------------*/
 
+    error Sale__NotActive();
+    error Sale__NotClaimable();
+    error Sale__NotRefundable();
+    error Sale__InvalidClaim();
+    error Sale__InvalidRefund();
+    error Sale__NotInactive();
+    error Sale__InvalidPayment();
+    error Sale__CapReached();
 
     /*----------  EVENTS  ------------------------------------------------*/
 
-    event Sale__StateSet(State state);
     event Sale__Purchase(address indexed account, uint256 amount);
     event Sale__Claim(address indexed account, uint256 amount);
-
+    event Sale__Refund(address indexed account, uint256 amount);
+    event Sale__Initialized();
+    event Sale__Concluded(uint256 amount);
+    event Sale__Withdrawn(address indexed account, uint256 amount);
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
     constructor() {}
 
-    function purchase(address account) external payable {
+    function purchaseFor(address account) external payable {
         if (state != State.Active) revert Sale__NotActive();
 
         uint256 amount = msg.value;
-        if (amount <= 0) revert Sale__InvalidAmount();
+        if (amount <= 0) revert Sale__InvalidPayment();
 
         uint256 total = totalAmount + amount;
-        if (total > MAX_CAP) revert Sale__MaxCapReached();
+        if (total > MAX_CAP) revert Sale__CapReached();
 
         account_Amount[account] += amount;
         totalAmount += amount;
@@ -65,11 +74,11 @@ contract Sale is Ownable {
         emit Sale__Purchase(account, amount);
     }
 
-    function claim(address account) external {
+    function claimFor(address account) external {
         if (state != State.Claim) revert Sale__NotClaimable();
         if (account_Amount[account] == 0) revert Sale__InvalidClaim();
 
-        uint256 claim = account_Amount[account] * PRICE / DIVISOR - account_Claimed[account];
+        uint256 claim = account_Amount[account] * PRICE / DIVISOR - account_Claim[account];
         if (claim <= 0) revert Sale__InvalidClaim();
 
         account_Claim[account] += claim;
@@ -80,7 +89,7 @@ contract Sale is Ownable {
         emit Sale__Claim(account, claim);
     }
 
-    function refund(address account) external {
+    function refundFor(address account) external {
         if (state != State.Refund) revert Sale__NotRefundable();
 
         uint256 refund = account_Amount[account] - account_Refund[account];
@@ -94,7 +103,7 @@ contract Sale is Ownable {
         emit Sale__Refund(account, refund);
     }
 
-    function intialize() external onlyOwner {
+    function initialize() external onlyOwner {
         if (state != State.Inactive) revert Sale__NotInactive();
         state = State.Active;
         emit Sale__Initialized();
@@ -109,10 +118,17 @@ contract Sale is Ownable {
         } else {
             state = State.Claim;
             token = _token;
-            totalClaim = totalAmount * PRICE / DIVISOR; 
+            totalClaim = totalAmount * DIVISOR / PRICE; 
             IERC20(token).safeTransfer(msg.sender, totalClaim);
             emit Sale__Concluded(totalClaim);
         }
+    }
+
+    function withdraw(address account) external onlyOwner {
+        if (state != State.Claim) revert Sale__NotClaimable();
+        uint256 amount = address(this).balance;
+        payable(account).transfer(amount);
+        emit Sale__Withdrawn(account, amount);
     }
 
 }
