@@ -11,7 +11,7 @@ contract Sale is Ownable {
 
     uint256 constant public PRICE = 0.5 ether;
     uint256 constant public DIVISOR = 1 ether;
-    uint256 constant public MIN_CAP =  5_000 ether;
+    uint256 constant public MIN_CAP = 5_000 ether;
     uint256 constant public MAX_CAP = 10_000 ether;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
@@ -25,10 +25,12 @@ contract Sale is Ownable {
     mapping(address => uint256) public account_Amount;
     mapping(address => uint256) public account_Claim;
     mapping(address => uint256) public account_Refund;
+    mapping(address => bool) public account_Whitelist;
 
     enum State {
-        Inactive,
-        Active,
+        Closed,
+        Whitelist,
+        Open,
         Claim,
         Refund
     }
@@ -37,30 +39,40 @@ contract Sale is Ownable {
 
     /*----------  ERRORS  ------------------------------------------------*/
 
-    error Sale__NotActive();
-    error Sale__NotClaimable();
-    error Sale__NotRefundable();
-    error Sale__InvalidClaim();
-    error Sale__InvalidRefund();
-    error Sale__NotInactive();
+    error Sale__InvalidAccount();
+    error Sale__NotWhitelisted();
+    error Sale__NotOpen();
     error Sale__InvalidPayment();
     error Sale__CapReached();
+    error Sale__InvalidClaim();
+    error Sale__InvalidRefund();
+    error Sale__TokenNotSet();
+    error Sale__NotClaim();
+    error Sale__NotRefund();
+    error Sale__NotWhitelist();
+    error Sale__NotInitialized();
+    error Sale__NotActive();
 
     /*----------  EVENTS  ------------------------------------------------*/
 
     event Sale__Purchase(address indexed account, uint256 amount);
     event Sale__Claim(address indexed account, uint256 amount);
     event Sale__Refund(address indexed account, uint256 amount);
-    event Sale__Initialized();
-    event Sale__Concluded(uint256 amount);
     event Sale__Withdrawn(address indexed account, uint256 amount);
+    event Sale__Whitelist(address indexed account, bool flag);
+    event Sale__TokenSet(address indexed token);
+    event Sale__StateUpdated(State indexed state);
+
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
     constructor() {}
 
     function purchaseFor(address account) external payable {
-        if (state != State.Active) revert Sale__NotActive();
+        if (account == address(0)) revert Sale__InvalidAccount();
+        if (state == State.Whitelist) {
+            if (!account_Whitelist[account]) revert Sale__NotWhitelisted();
+        } else if (state != State.Open) revert Sale__NotOpen();
 
         uint256 amount = msg.value;
         if (amount <= 0) revert Sale__InvalidPayment();
@@ -75,7 +87,8 @@ contract Sale is Ownable {
     }
 
     function claimFor(address account) external {
-        if (state != State.Claim) revert Sale__NotClaimable();
+        if (account == address(0)) revert Sale__InvalidAccount();
+        if (state != State.Claim) revert Sale__NotClaim();
         if (account_Amount[account] == 0) revert Sale__InvalidClaim();
 
         uint256 claim = account_Amount[account] * PRICE / DIVISOR - account_Claim[account];
@@ -90,7 +103,9 @@ contract Sale is Ownable {
     }
 
     function refundFor(address account) external {
-        if (state != State.Refund) revert Sale__NotRefundable();
+        if (account == address(0)) revert Sale__InvalidAccount();
+        if (state != State.Refund) revert Sale__NotRefund();
+        if (account_Amount[account] == 0) revert Sale__InvalidRefund();
 
         uint256 refund = account_Amount[account] - account_Refund[account];
         if (refund <= 0) revert Sale__InvalidRefund();
@@ -103,29 +118,43 @@ contract Sale is Ownable {
         emit Sale__Refund(account, refund);
     }
 
-    function initialize() external onlyOwner {
-        if (state != State.Inactive) revert Sale__NotInactive();
-        state = State.Active;
-        emit Sale__Initialized();
+    /*----------  RESTRICTED FUNCTIONS  ---------------------------------*/
+
+    function whitelist(address[] calldata accounts, bool flag) external onlyOwner {
+        for (uint256 i = 0; i < accounts.length; i++) {
+            account_Whitelist[accounts[i]] = flag;
+            emit Sale__Whitelist(accounts[i], flag);
+        }
     }
 
-    function conclude(address _token) external onlyOwner {
-        if (state != State.Active) revert Sale__NotActive();
+    function setToken(address _token) external onlyOwner {
+        token = _token;
+        emit Sale__TokenSet(token);
+    }
 
-        if (totalAmount < MIN_CAP) {
-            state = State.Refund;
-            emit Sale__Concluded(0);
-        } else {
-            state = State.Claim;
-            token = _token;
-            totalClaim = totalAmount * DIVISOR / PRICE; 
-            IERC20(token).safeTransfer(msg.sender, totalClaim);
-            emit Sale__Concluded(totalClaim);
+    function updateState() external onlyOwner {
+        if (state == State.Closed) {
+            state = State.Whitelist;
+            emit Sale__StateUpdated(State.Whitelist);
+        } else if (state == State.Whitelist) {
+            state = State.Open;
+            emit Sale__StateUpdated(State.Open);
+        } else if (state == State.Open) {
+            if (totalAmount < MIN_CAP) {
+                state = State.Refund;
+                emit Sale__StateUpdated(State.Refund);
+            } else {
+                if (token == address(0)) revert Sale__TokenNotSet();
+                state = State.Claim;
+                totalClaim = totalAmount * DIVISOR / PRICE; 
+                IERC20(token).safeTransferFrom(msg.sender, address(this), totalClaim);
+                emit Sale__StateUpdated(State.Claim);
+            }
         }
     }
 
     function withdraw(address account) external onlyOwner {
-        if (state != State.Claim) revert Sale__NotClaimable();
+        if (state != State.Claim) revert Sale__NotClaim();
         uint256 amount = address(this).balance;
         payable(account).transfer(amount);
         emit Sale__Withdrawn(account, amount);
