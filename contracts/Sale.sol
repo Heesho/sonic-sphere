@@ -11,8 +11,8 @@ contract Sale is Ownable {
 
     uint256 constant public PRICE = 0.5 ether;
     uint256 constant public DIVISOR = 1 ether;
-    uint256 constant public MIN_CAP =  5_000_000 ether;
-    uint256 constant public MAX_CAP = 10_000_000 ether;
+    uint256 constant public MIN_CAP =  5_000 ether;
+    uint256 constant public MAX_CAP = 10_000 ether;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
