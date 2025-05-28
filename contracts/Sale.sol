@@ -43,7 +43,6 @@ contract Sale is Ownable {
     error Sale__NotWhitelisted();
     error Sale__NotOpen();
     error Sale__InvalidPayment();
-    error Sale__CapReached();
     error Sale__InvalidClaim();
     error Sale__InvalidRefund();
     error Sale__TokenNotSet();
@@ -52,6 +51,10 @@ contract Sale is Ownable {
     error Sale__NotWhitelist();
     error Sale__NotInitialized();
     error Sale__NotActive();
+    error Sale__Concluded();
+    error Sale__CantWithdrawInRefund();
+    error Sale__MinCapNotReached();
+    error Sale__MaxCapReached();
 
     /*----------  EVENTS  ------------------------------------------------*/
 
@@ -62,7 +65,6 @@ contract Sale is Ownable {
     event Sale__Whitelist(address indexed account, bool flag);
     event Sale__TokenSet(address indexed token);
     event Sale__StateUpdated(State indexed state);
-
 
     /*----------  FUNCTIONS  --------------------------------------------*/
 
@@ -78,7 +80,7 @@ contract Sale is Ownable {
         if (amount <= 0) revert Sale__InvalidPayment();
 
         uint256 total = totalAmount + amount;
-        if (total > MAX_CAP) revert Sale__CapReached();
+        if (total > MAX_CAP) revert Sale__MaxCapReached();
 
         account_Amount[account] += amount;
         totalAmount += amount;
@@ -91,7 +93,7 @@ contract Sale is Ownable {
         if (state != State.Claim) revert Sale__NotClaim();
         if (account_Amount[account] == 0) revert Sale__InvalidClaim();
 
-        uint256 claim = account_Amount[account] * PRICE / DIVISOR - account_Claim[account];
+        uint256 claim = account_Amount[account] * DIVISOR / PRICE - account_Claim[account];
         if (claim <= 0) revert Sale__InvalidClaim();
 
         account_Claim[account] += claim;
@@ -146,18 +148,27 @@ contract Sale is Ownable {
             } else {
                 if (token == address(0)) revert Sale__TokenNotSet();
                 state = State.Claim;
-                totalClaim = totalAmount * DIVISOR / PRICE; 
-                IERC20(token).safeTransferFrom(msg.sender, address(this), totalClaim);
+                uint256 tokenPurchased = getTotalTokenPurchased();
+                IERC20(token).safeTransferFrom(msg.sender, address(this), tokenPurchased);
                 emit Sale__StateUpdated(State.Claim);
             }
+        } else {
+            revert Sale__Concluded();
         }
     }
 
     function withdraw(address account) external onlyOwner {
-        if (state != State.Claim) revert Sale__NotClaim();
+        if (state == State.Refund) revert Sale__CantWithdrawInRefund();
+        if (totalAmount < MIN_CAP) revert Sale__MinCapNotReached();
         uint256 amount = address(this).balance;
         payable(account).transfer(amount);
         emit Sale__Withdrawn(account, amount);
+    }
+
+    /*----------  VIEW FUNCTIONS  ---------------------------------------*/
+
+    function getTotalTokenPurchased() public view returns (uint256) {
+        return totalAmount * DIVISOR / PRICE;
     }
 
 }
