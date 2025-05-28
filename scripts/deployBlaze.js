@@ -1000,6 +1000,9 @@ async function main() {
   // await wS.setWhitelisted(wS_SHADOW_lp.address, true);
   // console.log("wS_SHADOW_lp whitelisted");
 
+  // await wS.setWhitelisted(lpPlugin.address, true);
+  // console.log("LP Plugin whitelisted");
+
   // await wS.setWhitelisted(wS_SWPX_lp_farm.address, true);
   // console.log("wS_SWPX_lp_farm whitelisted");
 
