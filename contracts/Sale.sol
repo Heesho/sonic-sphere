@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Sale is Ownable {
+contract Sale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
     uint256 constant public PRICE = 0.5 ether;
     uint256 constant public DIVISOR = 1 ether;
-    uint256 constant public MIN_CAP = 5_000_000 ether;
-    uint256 constant public MAX_CAP = 10_000_000 ether;
+    uint256 constant public MIN_CAP = 5_000 ether;
+    uint256 constant public MAX_CAP = 10_000 ether;
 
     /*----------  STATE VARIABLES  --------------------------------------*/
 
@@ -70,7 +71,7 @@ contract Sale is Ownable {
 
     constructor() {}
 
-    function purchaseFor(address account) external payable {
+    function purchaseFor(address account) external payable nonReentrant {
         if (account == address(0)) revert Sale__InvalidAccount();
         if (state == State.Whitelist) {
             if (!account_Whitelist[account]) revert Sale__NotWhitelisted();
@@ -88,7 +89,7 @@ contract Sale is Ownable {
         emit Sale__Purchase(account, amount);
     }
 
-    function claimFor(address account) external {
+    function claimFor(address account) external nonReentrant {
         if (account == address(0)) revert Sale__InvalidAccount();
         if (state != State.Claim) revert Sale__NotClaim();
         if (account_Amount[account] == 0) revert Sale__InvalidClaim();
@@ -104,7 +105,7 @@ contract Sale is Ownable {
         emit Sale__Claim(account, claim);
     }
 
-    function refundFor(address account) external {
+    function refundFor(address account) external nonReentrant {
         if (account == address(0)) revert Sale__InvalidAccount();
         if (state != State.Refund) revert Sale__NotRefund();
         if (account_Amount[account] == 0) revert Sale__InvalidRefund();
