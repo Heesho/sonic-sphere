@@ -4,9 +4,11 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Sale is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
+    using Address for address payable;
 
     /*----------  CONSTANTS  --------------------------------------------*/
 
@@ -49,9 +51,6 @@ contract Sale is Ownable, ReentrancyGuard {
     error Sale__TokenNotSet();
     error Sale__NotClaim();
     error Sale__NotRefund();
-    error Sale__NotWhitelist();
-    error Sale__NotInitialized();
-    error Sale__NotActive();
     error Sale__Concluded();
     error Sale__CantWithdrawInRefund();
     error Sale__MinCapNotReached();
@@ -84,7 +83,7 @@ contract Sale is Ownable, ReentrancyGuard {
         if (total > MAX_CAP) revert Sale__MaxCapReached();
 
         account_Amount[account] += amount;
-        totalAmount += amount;
+        totalAmount = total;
 
         emit Sale__Purchase(account, amount);
     }
@@ -116,7 +115,7 @@ contract Sale is Ownable, ReentrancyGuard {
         account_Refund[account] += refund;
         totalRefund += refund;
 
-        payable(account).transfer(refund);
+        payable(account).sendValue(refund);
 
         emit Sale__Refund(account, refund);
     }
@@ -162,7 +161,7 @@ contract Sale is Ownable, ReentrancyGuard {
         if (state == State.Refund) revert Sale__CantWithdrawInRefund();
         if (totalAmount < MIN_CAP) revert Sale__MinCapNotReached();
         uint256 amount = address(this).balance;
-        payable(account).transfer(amount);
+        payable(account).sendValue(amount);
         emit Sale__Withdrawn(account, amount);
     }
 
