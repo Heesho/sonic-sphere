@@ -1090,6 +1090,17 @@ async function main() {
   // console.log("Ancillary Contracts Verified");
 
   //===================================================================
+  // Verify Gauge and Bribe
+  //===================================================================
+
+  // await verifyGauge(
+  //   farmPlugin.address,
+  //   "0xC426c984DD1EC880109D719F34C90C8ecF16D7C8"
+  // );
+
+  // await verifyBribe("0x8E8dbB69baeafeC597e2B2a4f13166a4fb8C685c");
+
+  //===================================================================
   // Set Up System
   //===================================================================
 
