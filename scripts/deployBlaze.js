@@ -21,6 +21,7 @@ let OTOKENFactory, VTOKENFactory, feesFactory, rewarderFactory;
 let TOKEN, OTOKEN, VTOKEN, fees, rewarder;
 let voter, minter, gaugeFactory, bribeFactory, auctionFactory, rewardAuction;
 let multicall, controller, router;
+let sale;
 
 let wS, SHADOW, SWPX; // erc20
 let stS; // erc4626
@@ -108,6 +109,11 @@ async function getContracts() {
   router = await ethers.getContractAt(
     "contracts/Router.sol:Router",
     "0xcB22020E3C9cD2cDf264874c2096399E03382E03"
+  );
+
+  sale = await ethers.getContractAt(
+    "contracts/Sale.sol:Sale",
+    "0xBFe01B33ea5ebC81279462b8206690B1C5a9a419"
   );
 
   wS = await ethers.getContractAt(
@@ -775,6 +781,22 @@ async function verifyRewardAuction() {
   console.log("RewardAuction Verified");
 }
 
+async function deploySale() {
+  console.log("Starting Sale Deployment");
+  const saleArtifact = await ethers.getContractFactory("Sale");
+  sale = await saleArtifact.deploy();
+  await sleep(5000);
+  console.log("Sale Deployed at:", sale.address);
+}
+
+async function verifySale() {
+  console.log("Starting Sale Verification");
+  await hre.run("verify:verify", {
+    address: sale.address,
+    contract: "contracts/Sale.sol:Sale",
+  });
+}
+
 async function deployERC4626PluginFactory() {
   console.log("Starting ERC4626PluginFactory Deployment");
   const erc4626PluginFactoryArtifact = await ethers.getContractFactory(
@@ -1107,6 +1129,15 @@ async function main() {
   // console.log("Starting System Set Up");
   // await setUpSystem(wallet.address);
   // console.log("System Set Up");
+
+  //===================================================================
+  // 8. Deploy Sale
+  //===================================================================
+
+  // console.log("Starting Sale Deployment");
+  // await deploySale();
+  // await verifySale();
+  // console.log("Sale Deployed");
 
   //===================================================================
   // Transfer Ownership
